@@ -9,6 +9,7 @@ import { generateNodeModulesArtifacts, validateCommittedArtifacts } from '../../
 import { getAdminPath, getConfigPath } from '../utils';
 import { serializePathForImport } from '../../admin-ui/utils/serializePathForImport';
 import { writeAdminFile } from '../../admin-ui/system/generateAdminUI';
+import { sendTelemetryEvent } from '../../lib/telemetry';
 
 const reexportKeystoneConfig = async (cwd: string, isDisabled?: boolean) => {
   const projectAdminPath = getAdminPath(cwd);
@@ -58,6 +59,8 @@ export async function build(cwd: string) {
   const config = initConfig(requireSource(getConfigPath(cwd)).default);
 
   const { graphQLSchema, adminMeta } = createSystem(config);
+
+  sendTelemetryEvent('keystone-build', cwd, config.db.provider, config.lists, graphQLSchema);
 
   await validateCommittedArtifacts(graphQLSchema, config, cwd);
 

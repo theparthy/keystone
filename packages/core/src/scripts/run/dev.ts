@@ -14,6 +14,7 @@ import { requireSource } from '../../lib/config/requireSource';
 import { defaults } from '../../lib/config/defaults';
 import { createExpressServer } from '../../lib/server/createExpressServer';
 import { createAdminUIMiddleware } from '../../lib/server/createAdminUIMiddleware';
+import { sendTelemetryEvent } from '../../lib/telemetry';
 import {
   generateCommittedArtifacts,
   generateNodeModulesArtifacts,
@@ -82,6 +83,8 @@ export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
     expressServer.use(adminUIMiddleware);
     hasAddedAdminUIMiddleware = true;
     initKeystonePromiseResolve();
+
+    sendTelemetryEvent('keystone-dev', cwd, config.db.provider, config.lists, graphQLSchema);
 
     // this exports a function which dynamically requires the config rather than directly importing it.
     // this allows us to control exactly _when_ the gets evaluated so that we can handle errors ourselves.

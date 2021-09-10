@@ -7,6 +7,7 @@ import { createExpressServer } from '../../lib/server/createExpressServer';
 import { createAdminUIMiddleware } from '../../lib/server/createAdminUIMiddleware';
 import { requirePrismaClient } from '../../artifacts';
 import { ExitError, getAdminPath } from '../utils';
+import { sendTelemetryEvent } from '../../lib/telemetry';
 
 export const start = async (cwd: string) => {
   console.log('✨ Starting Keystone');
@@ -22,6 +23,8 @@ export const start = async (cwd: string) => {
   // export a promise that resolves to the actual export so yeah, we need to await a require call
   const config = initConfig((await require(apiFile)).config);
   const { getKeystone, graphQLSchema } = createSystem(config);
+
+  sendTelemetryEvent('keystone-start', cwd, config.db.provider, config.lists, graphQLSchema);
 
   const prismaClient = requirePrismaClient(cwd);
 
