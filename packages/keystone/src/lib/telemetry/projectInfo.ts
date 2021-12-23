@@ -28,12 +28,21 @@ const keystonePackages = (cwd: string) => {
   }
 };
 
+// Get a summary of how many fields are being used in each list.
+// In the format { <field count>: <total lists with that field count> }
+// E.g { '2': 1, '4': 2, '6': 1 }
 const listFieldCount = (lists?: ListSchemaConfig) => {
   if (!lists) {
     return null;
   }
-  const listCount = Object.values(lists).map(list => {
-    return Object.keys(list.fields).length;
+
+  const listCount: Record<string, number> = {};
+  Object.values(lists).forEach(list => {
+    const fieldCount = Object.keys(list.fields).length;
+    if (!listCount[fieldCount]) {
+      listCount[fieldCount] = 0;
+    }
+    listCount[fieldCount] = listCount[fieldCount] + 1;
   });
 
   return listCount;
