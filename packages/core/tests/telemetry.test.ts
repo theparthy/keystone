@@ -1,10 +1,8 @@
 import fetch, { Response } from 'node-fetch';
-import child_process from 'child_process';
+import { GraphQLSchema } from 'graphql';
 import { sendTelemetryEvent } from '../src/lib/telemetry';
 import { deviceInfo } from '../src/lib/telemetry/deviceInfo';
-import { projectInfo } from '../src/lib/telemetry/projectInfo';
 import { ListSchemaConfig } from '../src/types';
-import { GraphQLSchema } from 'graphql';
 
 const deviceData = {
   deviceHash: 'device',
@@ -16,9 +14,8 @@ const deviceData = {
 };
 
 const projectData = {
-  gitOriginHash: 'git@origin',
   schemaHash: { description: 'graphQLSchema' } as GraphQLSchema,
-  fieldCounts: [3, 2],
+  fieldCounts: { '2': 1, '3': 1 },
   keystonePackages: { '@keystonejs/keystone': '1.2.3' },
 };
 
@@ -42,7 +39,6 @@ const defaultFetchParam = {
     ...eventData,
     deviceHash: `${eventData.deviceHash}-hashed`,
     schemaHash: `${JSON.stringify(eventData.schemaHash)}-hashed`,
-    gitOriginHash: `origin-hashed`,
   }),
 };
 
@@ -105,9 +101,6 @@ process.env.LC_ALL = eventData.locale;
 describe('telemetry', () => {
   const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
   const defaultFetchMock = () => mockFetch.mockImplementationOnce(async () => ({} as Response));
-  const defaultGitOrigin = Buffer.from('git@origin');
-  const mockedExecSync = jest.spyOn(child_process, 'execSync');
-  const defaultExecSyncMock = () => mockedExecSync.mockReturnValueOnce(defaultGitOrigin);
 
   afterEach(() => {
     // Reset env variables
@@ -121,7 +114,6 @@ describe('telemetry', () => {
   });
 
   test('sendTelemetryEvent calls with expected data', () => {
-    defaultExecSyncMock();
     defaultFetchMock();
 
     sendTelemetryEvent(eventData.eventType, cwd, eventData.dbProvider, lists, eventData.schemaHash);
@@ -134,7 +126,6 @@ describe('telemetry', () => {
   });
 
   test('sendTelemetryEvent uses endpoint override', () => {
-    defaultExecSyncMock();
     defaultFetchMock();
 
     const updatedEndpoint = 'https://keylemetry.com';
@@ -175,35 +166,5 @@ describe('telemetry', () => {
     const deviceResults = deviceInfo();
     expect(deviceResults.locale).toBe('en_AU');
     process.env.LC_ALL = eventData.locale;
-  });
-
-  test('normalize git origin works with different git urls', () => {
-    mockedExecSync.mockReturnValueOnce(Buffer.from('git@github.com:keystone/keystone.git'));
-    const projectResultsSSH = projectInfo(cwd, lists, eventData.schemaHash);
-    expect(projectResultsSSH.gitOriginHash).toBe('github.com/keystone/keystone.git-hashed');
-
-    mockedExecSync.mockReturnValueOnce(Buffer.from('https://github.com/keystone/keystone.git'));
-    const projectResultsHTTPS = projectInfo(cwd, lists, eventData.schemaHash);
-    expect(projectResultsHTTPS.gitOriginHash).toBe('github.com/keystone/keystone.git-hashed');
-
-    mockedExecSync.mockReturnValueOnce(Buffer.from('http://github.com/keystone/keystone.git'));
-    const projectResultsHTTP = projectInfo(cwd, lists, eventData.schemaHash);
-    expect(projectResultsHTTP.gitOriginHash).toBe('github.com/keystone/keystone.git-hashed');
-
-    mockedExecSync.mockReturnValueOnce(
-      Buffer.from('https://username@github.com/keystone/keystone.git')
-    );
-    const projectResultsHTTPSUsername = projectInfo(cwd, lists, eventData.schemaHash);
-    expect(projectResultsHTTPSUsername.gitOriginHash).toBe(
-      'github.com/keystone/keystone.git-hashed'
-    );
-
-    mockedExecSync.mockReturnValueOnce(Buffer.from(''));
-    const projectResultsEmptyString = projectInfo(cwd, lists, eventData.schemaHash);
-    expect(projectResultsEmptyString.gitOriginHash).toBe(null);
-
-    mockedExecSync.mockReturnValueOnce(Buffer.from('git@github.com:keystone/keystone.git\n'));
-    const projectResultsNewLine = projectInfo(cwd, lists, eventData.schemaHash);
-    expect(projectResultsNewLine.gitOriginHash).toBe('github.com/keystone/keystone.git-hashed');
   });
 });
