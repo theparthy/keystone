@@ -144,6 +144,27 @@ describe('telemetry', () => {
     expect(mockFetch).toHaveBeenCalledTimes(0);
   });
 
+  test("sendTelemetryEvent doesn't fetch when telemetry is disabled with any value as truthy", () => {
+    process.env.KEYSTONE_TELEMETRY_DISABLED = 'anything';
+    defaultFetchMock();
+    sendTelemetryEvent(eventData.eventType, cwd, eventData.dbProvider, lists, eventData.schemaHash);
+    expect(mockFetch).toHaveBeenCalledTimes(0);
+  });
+
+  test("sendTelemetryEvent fetches when telemetry disabled is disabled with '0'", () => {
+    process.env.KEYSTONE_TELEMETRY_DISABLED = '0';
+    defaultFetchMock();
+    sendTelemetryEvent(eventData.eventType, cwd, eventData.dbProvider, lists, eventData.schemaHash);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  test("sendTelemetryEvent fetches when telemetry disabled is disabled with 'false'", () => {
+    process.env.KEYSTONE_TELEMETRY_DISABLED = 'false';
+    defaultFetchMock();
+    sendTelemetryEvent(eventData.eventType, cwd, eventData.dbProvider, lists, eventData.schemaHash);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   test('fetch throwing an error wont bubble up', () => {
     mockFetch.mockImplementationOnce(() => {
       throw new Error();

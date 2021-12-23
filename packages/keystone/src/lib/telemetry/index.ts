@@ -14,8 +14,16 @@ if (userTelemetryDisabled) {
   process.env.KEYSTONE_TELEMETRY_DISABLED = '1';
 }
 
+const telemetryDisabled = () => {
+  return (
+    !!process.env.KEYSTONE_TELEMETRY_DISABLED &&
+    process.env.KEYSTONE_TELEMETRY_DISABLED !== '0' &&
+    process.env.KEYSTONE_TELEMETRY_DISABLED !== 'false'
+  );
+};
+
 // If Keystone telemetry is disabled also disable NextJS & Prisma telemetry
-if (process.env.KEYSTONE_TELEMETRY_DISABLED === '1') {
+if (telemetryDisabled()) {
   process.env.NEXT_TELEMETRY_DISABLED = '1';
   process.env.CHECKPOINT_DISABLE = '1';
 }
@@ -41,7 +49,7 @@ export function sendTelemetryEvent(
   graphQLSchema: GraphQLSchema
 ) {
   try {
-    if (process.env.KEYSTONE_TELEMETRY_DISABLED === '1') {
+    if (telemetryDisabled()) {
       return;
     }
 
