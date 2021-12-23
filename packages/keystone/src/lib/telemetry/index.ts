@@ -1,10 +1,10 @@
 import fetch from 'node-fetch';
 import Conf from 'conf';
+import { GraphQLSchema } from 'graphql';
 import { ListSchemaConfig } from '../../types';
 import { defaults } from '../config/defaults';
 import { deviceInfo } from './deviceInfo';
 import { projectInfo } from './projectInfo';
-import { GraphQLSchema } from 'graphql';
 
 // Load global telemetry config settings (if set)
 const userConfig = new Conf({ projectName: 'keystonejs' });
