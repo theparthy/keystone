@@ -5,7 +5,7 @@ import { deviceInfo } from '../src/lib/telemetry/deviceInfo';
 import { ListSchemaConfig } from '../src/types';
 
 const deviceData = {
-  deviceHash: 'device',
+  deviceId: '1234',
   os: 'keystone-os',
   osVersion: '0.0.1',
   nodeVersion: process.version,
@@ -37,8 +37,8 @@ const defaultFetchParam = {
   ...fetchOptions,
   body: JSON.stringify({
     ...eventData,
-    deviceHash: `${eventData.deviceHash}-hashed`,
-    schemaHash: `${JSON.stringify(eventData.schemaHash)}-hashed`,
+    schemaHash: `arandomstring-${JSON.stringify(eventData.schemaHash)}-hashed`,
+    deviceId: 'arandomstring',
   }),
 };
 
@@ -65,12 +65,6 @@ const lists: ListSchemaConfig = {
 
 const cwd = 'path';
 
-jest.mock('node-machine-id', () => {
-  return {
-    machineIdSync: () => `device-hashed`,
-  };
-});
-
 jest.mock('os', () => {
   return { platform: () => 'keystone-os', release: () => '0.0.1' };
 });
@@ -83,7 +77,12 @@ jest.mock('conf', () => {
 });
 
 jest.mock('crypto', () => {
-  return { createHash: () => ({ update: (text: string) => ({ digest: () => `${text}-hashed` }) }) };
+  return {
+    createHmac: (algorythm: string, key: string) => ({
+      update: (text: string) => ({ digest: () => `${key}-${text}-hashed` }),
+    }),
+    randomBytes: () => ({ toString: () => 'arandomstring' }),
+  };
 });
 
 jest.mock('node-fetch', () => jest.fn());

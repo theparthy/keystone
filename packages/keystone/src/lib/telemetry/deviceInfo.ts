@@ -1,5 +1,4 @@
 import os from 'os';
-import { machineIdSync } from 'node-machine-id';
 import ci from 'ci-info';
 
 // Get locale from process settings and remove any encoding
@@ -19,7 +18,6 @@ const locale = () => {
 
 export function deviceInfo() {
   return {
-    deviceHash: machineIdSync(), // Will be hashed by default
     os: os.platform(),
     osVersion: os.release(),
     nodeVersion: process.version,

@@ -1,11 +1,10 @@
-import { createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import { GraphQLSchema } from 'graphql';
 import { ListSchemaConfig } from '../../types';
 
-// One way SHA256 hash. When reaching the server any hashed property
-// will be rehashed with a salt before storage.
-const hashText = (text: string) => {
-  return createHash('sha256').update(text).digest('hex');
+// One way SHA256 hash with a salt that is only available on the client
+const hashText = (text: string, salt: string) => {
+  return createHmac('sha256', salt).update(text).digest('hex');
 };
 
 const keystonePackages = (cwd: string) => {
@@ -48,9 +47,14 @@ const listFieldCount = (lists?: ListSchemaConfig) => {
   return listCount;
 };
 
-export function projectInfo(cwd: string, lists: ListSchemaConfig, graphQLSchema: GraphQLSchema) {
+export function projectInfo(
+  cwd: string,
+  lists: ListSchemaConfig,
+  graphQLSchema: GraphQLSchema,
+  salt: string
+) {
   return {
-    schemaHash: hashText(JSON.stringify(graphQLSchema)),
+    schemaHash: hashText(JSON.stringify(graphQLSchema), salt),
     fieldCounts: listFieldCount(lists),
     keystonePackages: keystonePackages(cwd),
   };
