@@ -11,14 +11,12 @@ const keystonePackages = (cwd: string) => {
   try {
     // Import the project's package.json
     const projectPkgJson = require(`${cwd}/package.json`);
-    const dependancies: { [key: string]: string } = projectPkgJson.dependencies;
+    const dependancies: Record<string, string> = projectPkgJson.dependencies;
 
     // Match any packages that are in the @keystonejs or @keystone-next namespace
-    const namespaceRegex = new RegExp(/^@keystone(js|-next)/);
+    const namespaceRegex = new RegExp(/^@keystone(js|-next|-6)/);
     const packages = Object.fromEntries(
-      Object.entries(dependancies).filter(([dependancyKey, dependancyVersion]) =>
-        namespaceRegex.test(dependancyKey)
-      )
+      Object.entries(dependancies).filter(([dependancyKey]) => namespaceRegex.test(dependancyKey))
     );
 
     return packages;
