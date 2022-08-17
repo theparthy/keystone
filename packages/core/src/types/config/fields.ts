@@ -32,6 +32,8 @@ export type CommonFieldConfig<
   };
   graphql?: {
     cacheHint?: CacheHint;
+    isRequired?: true | readonly ('create' | 'update')[];
+
     // Setting any of these values will remove the corresponding input/output types from the GraphQL schema.
     // Output Types
     //   'read': Does this field exist on the Item type? Will also disable filtering/ordering/admimMeta

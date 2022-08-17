@@ -11,6 +11,9 @@ export const lists: Lists = {
         defaultValue: 0,
         validation: { isRequired: true },
         db: { isNullable: false },
+        graphql: {
+          isRequired: ['update']
+        },
         hooks: {
           resolveInput: async ({ resolvedData, operation, item }) => {
             if (operation === 'create') return resolvedData.version;

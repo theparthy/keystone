@@ -25,7 +25,7 @@ export function useChangedFieldsAndDataForUpdate(
   }, [value, fields]);
 
   return useMemo(() => {
-    let changedFields = new Set<string>();
+    const changedFields = new Set<string>();
     Object.keys(serializedFieldValues).forEach(fieldKey => {
       let isEqual = isDeepEqual(
         serializedFieldValues[fieldKey],
@@ -40,6 +40,14 @@ export function useChangedFieldsAndDataForUpdate(
     changedFields.forEach(fieldKey => {
       Object.assign(dataForUpdate, serializedFieldValues[fieldKey]);
     });
+
+    Object.keys(serializedFieldValues)
+      .filter(key => fields[key].itemView.isRequired?.includes('update'))
+      .filter(key => !changedFields.has(key))
+      .forEach(key => {
+        Object.assign(dataForUpdate, serializedFieldValues[key]);
+      });
+
     return { changedFields: changedFields as ReadonlySet<string>, dataForUpdate };
-  }, [serializedFieldValues, serializedValuesFromItem]);
+  }, [serializedFieldValues, serializedValuesFromItem, fields]);
 }

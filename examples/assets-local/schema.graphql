@@ -354,12 +354,18 @@ enum KeystoneAdminUIFieldMetaListViewFieldMode {
 
 type KeystoneAdminUIFieldMetaItemView {
   fieldMode: KeystoneAdminUIFieldMetaItemViewFieldMode
+  isRequired: [KeystoneAdminUIFieldMetaItemViewIsRequired!]
 }
 
 enum KeystoneAdminUIFieldMetaItemViewFieldMode {
   edit
   read
   hidden
+}
+
+enum KeystoneAdminUIFieldMetaItemViewIsRequired {
+  create
+  update
 }
 
 enum QueryMode {

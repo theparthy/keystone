@@ -24,7 +24,7 @@ import { Notice } from '@keystone-ui/notice';
 import { useToasts } from '@keystone-ui/toast';
 import { Tooltip } from '@keystone-ui/tooltip';
 import { FieldLabel, TextInput } from '@keystone-ui/fields';
-import { ListMeta } from '../../../../types';
+import type { ListMeta, FieldMeta } from '../../../../types';
 import {
   DataGetter,
   DeepNullable,
@@ -58,6 +58,8 @@ function useEventCallback<Func extends (...args: any) => any>(callback: Func): F
   return cb as any;
 }
 
+type ItemViewFieldModes = NonNullable<FieldMeta['itemView']['fieldMode']>;
+
 function ItemForm({
   listKey,
   itemGetter,
@@ -68,7 +70,7 @@ function ItemForm({
   listKey: string;
   itemGetter: DataGetter<ItemData>;
   selectedFields: string;
-  fieldModes: Record<string, 'edit' | 'read' | 'hidden'>;
+  fieldModes: Record<string, ItemViewFieldModes>;
   showDelete: boolean;
 }) {
   const list = useList(listKey);
@@ -322,14 +324,14 @@ const ItemPage = ({ listKey }: ItemPageProps) => {
       item: ItemData;
       keystone: {
         adminMeta: {
-          list: { fields: { path: string; itemView: { fieldMode: 'edit' | 'read' | 'hidden' } }[] };
+          list: { fields: { path: string; itemView: { fieldMode: ItemViewFieldModes } }[] };
         };
       };
     }>
   >(data, error?.graphQLErrors);
 
-  let itemViewFieldModesByField = useMemo(() => {
-    let itemViewFieldModesByField: Record<string, 'edit' | 'read' | 'hidden'> = {};
+  const itemViewFieldModesByField = useMemo(() => {
+    const itemViewFieldModesByField: Record<string, ItemViewFieldModes> = {};
     dataGetter.data?.keystone?.adminMeta?.list?.fields?.forEach(field => {
       if (field !== null && field.path !== null && field?.itemView?.fieldMode != null) {
         itemViewFieldModesByField[field.path] = field.itemView.fieldMode;

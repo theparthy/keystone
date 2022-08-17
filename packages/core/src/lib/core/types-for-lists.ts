@@ -38,6 +38,10 @@ export type InitialisedField = Omit<NextFieldType, 'dbField' | 'access' | 'graph
       filter: boolean | ((args: FilterOrderArgs<BaseListTypeInfo>) => MaybePromise<boolean>);
       orderBy: boolean | ((args: FilterOrderArgs<BaseListTypeInfo>) => MaybePromise<boolean>);
     };
+    isRequired: {
+      create: boolean;
+      update: boolean;
+    },
     cacheHint: CacheHint | undefined;
   };
 };
@@ -172,7 +176,13 @@ function getListsWithInitialisedFields(
         orderBy: read && (f.isOrderable ?? intermediateList.graphql.isEnabled.orderBy),
       };
 
-      resultFields[fieldKey] = {
+      const isRequired = f.graphql?.isRequired;
+      const _isRequired = {
+        create: isRequired == true || isRequired?.includes('create'),
+        update: isRequired == true || isRequired?.includes('update'),
+      };
+
+      fields[fieldKey] = {
         ...f,
         dbField: f.dbField as ResolvedDBField,
         access: parseFieldAccessControl(f.access),
@@ -209,6 +219,18 @@ function getListsWithInitialisedFields(
   }
 
   return result;
+}
+
+function graphqlArgForField (field: InitialisedField, operation: 'create' | 'update') {
+  const input = field.input?.[operation];
+  if (!input?.arg || !field.graphql.isEnabled[operation]) return;
+  if (!field.graphql.isRequired[operation]) return input.arg;
+  if (input.arg.type.kind === 'non-null') return;
+
+  return graphql.arg({
+    ...input.arg,
+    type: graphql.nonNull(input.arg.type)
+  });
 }
 
 function getListGraphqlTypes(
@@ -305,12 +327,15 @@ function getListGraphqlTypes(
       name: names.createInputName,
       fields: () => {
         const { fields } = lists[listKey];
-        return Object.fromEntries(
-          Object.entries(fields).flatMap(([key, field]) => {
-            if (!field.input?.create?.arg || !field.graphql.isEnabled.create) return [];
-            return [[key, field.input.create.arg]] as const;
-          })
-        );
+        const ret: Record<keyof typeof fields, graphql.Arg<graphql.InputType>> = {};
+
+        for (const key in fields) {
+          const arg = graphqlArgForField(fields[key], 'create');
+          if (!arg) continue;
+          ret[key] = arg;
+        }
+
+        return ret;
       },
     });
 
@@ -318,12 +343,15 @@ function getListGraphqlTypes(
       name: names.updateInputName,
       fields: () => {
         const { fields } = lists[listKey];
-        return Object.fromEntries(
-          Object.entries(fields).flatMap(([key, field]) => {
-            if (!field.input?.update?.arg || !field.graphql.isEnabled.update) return [];
-            return [[key, field.input.update.arg]] as const;
-          })
-        );
+        const ret: Record<keyof typeof fields, graphql.Arg<graphql.InputType>> = {};
+
+        for (const key in fields) {
+          const arg = graphqlArgForField(fields[key], 'update');
+          if (!arg) continue;
+          ret[key] = arg;
+        }
+
+        return ret;
       },
     });
 

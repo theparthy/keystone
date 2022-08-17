@@ -18,6 +18,15 @@ export function hasCreateAccessControl<ListTypeInfo extends BaseListTypeInfo>(
   return typeof access === 'function' || typeof access.create === 'function';
 }
 
+export function hasUpdateAccessControl<ListTypeInfo extends BaseListTypeInfo>(
+  access: FieldAccessControl<ListTypeInfo> | undefined
+) {
+  if (access === undefined) {
+    return false;
+  }
+  return typeof access === 'function' || typeof access.update === 'function';
+}
+
 export function getResolvedIsNullable(
   validation: undefined | { isRequired?: boolean },
   db: undefined | { isNullable?: boolean }
@@ -63,6 +72,21 @@ export function assertCreateIsNonNullAllowed<ListTypeInfo extends BaseListTypeIn
   }
 ) {
   if (config.graphql?.create?.isNonNull && hasCreateAccessControl(config.access)) {
+    throw new Error(
+      `The field at ${meta.listKey}.${meta.fieldKey} sets graphql.create.isNonNull: true and has create access control, this is not allowed.\n` +
+        'Either disable graphql.create.isNonNull or create access control.'
+    );
+  }
+}
+
+export function assertUpdateIsNonNullAllowed<ListTypeInfo extends BaseListTypeInfo>(
+  meta: FieldData,
+  config: {
+    access?: FieldAccessControl<ListTypeInfo> | undefined;
+    graphql?: { update?: { isNonNull?: boolean } };
+  }
+) {
+  if (config.graphql?.update?.isNonNull && hasUpdateAccessControl(config.access)) {
     throw new Error(
       `The field at ${meta.listKey}.${meta.fieldKey} sets graphql.create.isNonNull: true and has create access control, this is not allowed.\n` +
         'Either disable graphql.create.isNonNull or create access control.'

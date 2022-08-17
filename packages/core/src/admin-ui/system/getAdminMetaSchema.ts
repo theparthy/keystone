@@ -227,6 +227,29 @@ export function getAdminMetaSchema({
                 return ret;
               },
             }),
+
+            isRequired: graphql.field({
+              type: graphql.list(
+                graphql.nonNull(
+                  graphql.enum({
+                    name: 'KeystoneAdminUIFieldMetaItemViewIsRequired',
+                    values: graphql.enumValues(['create', 'update']),
+                  })
+                )
+              ),
+              resolve(rootVal, args, context) {
+                if ('isAdminUIBuildProcess' in context && rootVal.itemId !== null) {
+                  throw new Error(
+                    'KeystoneAdminUIFieldMetaItemView.isRequired cannot be resolved during the build process if an id is provided'
+                  );
+                }
+
+                const field = lists[rootVal.listKey].fields[rootVal.fieldPath];
+                const { isRequired } = field.graphql;
+
+                return (['create', 'update'] as const).filter(operation => isRequired[operation]);
+              },
+            }),
           },
         }),
       }),
