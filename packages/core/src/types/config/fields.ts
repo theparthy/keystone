@@ -3,7 +3,7 @@ import { FieldTypeFunc } from '../next-fields';
 import { BaseListTypeInfo } from '../type-info';
 import { KeystoneContextFromListTypeInfo, MaybePromise } from '..';
 import { MaybeItemFunction, MaybeSessionFunction } from './lists';
-import { FieldHooks } from './hooks';
+import { FieldHooks, FieldKeysForList } from './hooks';
 import { FieldAccessControl } from './access-control';
 
 export type BaseFields<ListTypeInfo extends BaseListTypeInfo> = {
@@ -16,9 +16,12 @@ export type FilterOrderArgs<ListTypeInfo extends BaseListTypeInfo> = {
   listKey: string;
   fieldKey: string;
 };
-export type CommonFieldConfig<ListTypeInfo extends BaseListTypeInfo> = {
+export type CommonFieldConfig<
+  ListTypeInfo extends BaseListTypeInfo,
+  FieldKey extends FieldKeysForList<ListTypeInfo> = FieldKeysForList<ListTypeInfo>
+> = {
   access?: FieldAccessControl<ListTypeInfo>;
-  hooks?: FieldHooks<ListTypeInfo>;
+  hooks?: FieldHooks<ListTypeInfo, FieldKey>;
   label?: string;
   ui?: {
     description?: string;
