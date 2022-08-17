@@ -1,12 +1,13 @@
 import {
   BaseListTypeInfo,
-  fieldType,
-  FieldTypeFunc,
   CommonFieldConfig,
+  FieldTypeFunc,
+  KeystoneContext,
   orderDirectionEnum,
   filters,
 } from '@keystone-6/core/types';
 import { graphql } from '@keystone-6/core';
+//  import { Context } from '.keystone/types';
 
 // this field is based on the integer field
 // but with validation to ensure the value is within an expected range
@@ -25,14 +26,16 @@ export const stars =
     maxStars = 5,
     ...config
   }: StarsFieldConfig<ListTypeInfo> = {}): FieldTypeFunc<ListTypeInfo> =>
-  meta =>
-    fieldType({
-      // this configures what data is stored in the database
-      kind: 'scalar',
-      mode: 'optional',
-      scalar: 'Int',
-      index: isIndexed === true ? 'index' : isIndexed || undefined,
-    })({
+  meta => (
+    {
+      dbField: {
+        // this configures what data is stored in the database
+        kind: 'scalar',
+        mode: 'optional',
+        scalar: 'Int',
+        index: isIndexed === true ? 'index' : isIndexed || undefined,
+      },
+
       // this passes through all of the common configuration like access control and etc.
       ...config,
       hooks: {
@@ -59,7 +62,7 @@ export const stars =
           // but field types can specify resolvers for inputs like they can for their output GraphQL field
           // this function can be omitted, it is here purely to show how you could change it
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          resolve(val, context) {
+          resolve(val: number, context: KeystoneContext) {
             // if it's null, then the value will be set to null in the database
             if (val === null) {
               return null;

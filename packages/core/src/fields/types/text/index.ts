@@ -2,13 +2,11 @@ import { humanize } from '../../../lib/utils';
 import {
   BaseListTypeInfo,
   CommonFieldConfig,
-  fieldType,
   orderDirectionEnum,
   FieldTypeFunc,
   filters,
 } from '../../../types';
 import { graphql } from '../../..';
-import { assertCreateIsNonNullAllowed, assertReadIsNonNullAllowed } from '../../non-null-graphql';
 import { resolveView } from '../../resolve-view';
 
 export type TextFieldConfig<ListTypeInfo extends BaseListTypeInfo> =
@@ -26,7 +24,6 @@ export type TextFieldConfig<ListTypeInfo extends BaseListTypeInfo> =
       length?: { min?: number; max?: number };
     };
     defaultValue?: string;
-    graphql?: { create?: { isNonNull?: boolean }; read?: { isNonNull?: boolean } };
     db?: {
       isNullable?: boolean;
       map?: string;
@@ -99,23 +96,21 @@ export const text =
 
     const fieldLabel = config.label ?? humanize(meta.fieldKey);
 
-    assertReadIsNonNullAllowed(meta, config, isNullable);
-
-    assertCreateIsNonNullAllowed(meta, config);
-
     const mode = isNullable ? 'optional' : 'required';
 
     const defaultValue =
       isNullable === false || _defaultValue !== undefined ? _defaultValue || '' : undefined;
-    return fieldType({
-      kind: 'scalar',
-      mode,
-      scalar: 'String',
-      default: defaultValue === undefined ? undefined : { kind: 'literal', value: defaultValue },
-      index: isIndexed === true ? 'index' : isIndexed || undefined,
-      map: config.db?.map,
-      nativeType: config.db?.nativeType,
-    })({
+
+    return {
+      dbField: {
+        kind: 'scalar',
+        mode,
+        scalar: 'String',
+        default: defaultValue === undefined ? undefined : { kind: 'literal', value: defaultValue },
+        index: isIndexed === true ? 'index' : isIndexed || undefined,
+        map: config.db?.map,
+        nativeType: config.db?.nativeType,
+      },
       ...config,
       hooks: {
         ...config.hooks,
@@ -160,12 +155,10 @@ export const text =
         },
         create: {
           arg: graphql.arg({
-            type: config.graphql?.create?.isNonNull
-              ? graphql.nonNull(graphql.String)
-              : graphql.String,
-            defaultValue: config.graphql?.create?.isNonNull ? defaultValue : undefined,
+            type: graphql.String,
+            defaultValue: undefined,
           }),
-          resolve(val) {
+          resolve(val: string | undefined) {
             if (val === undefined) {
               return defaultValue ?? null;
             }
@@ -176,7 +169,12 @@ export const text =
         orderBy: { arg: graphql.arg({ type: orderDirectionEnum }) },
       },
       output: graphql.field({
-        type: config.graphql?.read?.isNonNull ? graphql.nonNull(graphql.String) : graphql.String,
+        type: graphql.String,
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        resolve({ value, item }, args, context, info) {
+          return value as any; // TODO: FIXME
+        }
       }),
       views: resolveView('text/views'),
       getAdminMeta(): TextFieldMeta {
@@ -200,7 +198,7 @@ export const text =
           isNullable,
         };
       },
-    });
+    };
   };
 
 export type TextFieldMeta = {
