@@ -207,7 +207,9 @@ Options:
 
 - `cors` (default: `undefined`): Allows you to configure the [cors middleware](https://www.npmjs.com/package/cors#configuration-options) for your Express server.
   If left undefined `cors` will not be used.
-- `port` (default: `3000` ): The port your Express server will listen on.
+- `port` (default: `3000`): The port your Express server will listen on.
+  Not supported if the `options` argument is provided.
+- `options` (default: `undefined): The `options` object for the underlying Node [`http.Server`](https://nodejs.org/api/http.html#class-httpserver).
 - `maxFileSize` (default: `200 * 1024 * 1024`): The maximum file size allowed for uploads. If left undefined, defaults to `200 MiB`
 - `healthCheck` (default: `undefined`): Allows you to configure a health check endpoint on your server.
 - `extendExpressApp` (default: `undefined`): Allows you to extend the express app that Keystone creates.
