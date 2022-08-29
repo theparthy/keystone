@@ -86,7 +86,7 @@ export type StorageConfig = (
   FileOrImage;
 
 export type KeystoneConfig<TypeInfo extends BaseKeystoneTypeInfo = BaseKeystoneTypeInfo> = {
-  lists: ListSchemaConfig;
+  models: ListSchemaConfig;
   db: DatabaseConfig<TypeInfo>;
   ui?: AdminUIConfig<TypeInfo>;
   server?: ServerConfig<TypeInfo>;
@@ -139,8 +139,6 @@ export type DatabaseConfig<TypeInfo extends BaseKeystoneTypeInfo> = {
 export type AdminUIConfig<TypeInfo extends BaseKeystoneTypeInfo> = {
   /** Completely disables the Admin UI */
   isDisabled?: boolean;
-  /** Enables certain functionality in the Admin UI that expects the session to be an item */
-  enableSessionItem?: boolean;
   /** A function that can be run to validate that the current session should have access to the Admin UI */
   isAccessAllowed?: (context: KeystoneContext<TypeInfo>) => MaybePromise<boolean>;
   /** An array of page routes that can be accessed without passing the isAccessAllowed check */

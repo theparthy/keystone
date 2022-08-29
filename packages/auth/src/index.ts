@@ -177,7 +177,7 @@ export function createAuth<ListTypeInfo extends BaseListTypeInfo>({
    * Validates the provided auth config; optional step when integrating auth
    */
   const validateConfig = (keystoneConfig: KeystoneConfig) => {
-    const listConfig = keystoneConfig.lists[listKey];
+    const listConfig = keystoneConfig.models[listKey];
     if (listConfig === undefined) {
       const msg = `A createAuth() invocation specifies the list "${listKey}" but no list with that key has been defined.`;
       throw new Error(msg);
@@ -275,7 +275,6 @@ export function createAuth<ListTypeInfo extends BaseListTypeInfo>({
         getAdditionalFiles: [...(keystoneConfig.ui?.getAdditionalFiles || []), getAdditionalFiles],
         pageMiddleware: async args =>
           (await pageMiddleware(args)) ?? keystoneConfig?.ui?.pageMiddleware?.(args),
-        enableSessionItem: true,
         isAccessAllowed: async (context: KeystoneContext) => {
           // Allow access to the adminMeta data from the /init path to correctly render that page
           // even if the user isn't logged in (which should always be the case if they're seeing /init)
@@ -300,7 +299,7 @@ export function createAuth<ListTypeInfo extends BaseListTypeInfo>({
     const session = withItemData(keystoneConfig.session);
 
     const existingExtendGraphQLSchema = keystoneConfig.extendGraphqlSchema;
-    const listConfig = keystoneConfig.lists[listKey];
+    const listConfig = keystoneConfig.models[listKey];
     return {
       ...keystoneConfig,
       ui,
@@ -309,8 +308,8 @@ export function createAuth<ListTypeInfo extends BaseListTypeInfo>({
       // TODO: The fields we're adding here shouldn't naively replace existing fields with the same key
       // Leaving existing fields in place would allow solution devs to customise these field defs (eg. access control,
       // work factor for the tokens, etc.) without abandoning the withAuth() interface
-      lists: {
-        ...keystoneConfig.lists,
+      models: {
+        ...keystoneConfig.models,
         [listKey]: { ...listConfig, fields: { ...listConfig.fields, ...fields } },
       },
       extendGraphqlSchema: existingExtendGraphQLSchema
@@ -324,7 +323,7 @@ export function createAuth<ListTypeInfo extends BaseListTypeInfo>({
     // In the future we may want to return the following so that developers can
     // roll their own. This is pending a review of the use cases this might be
     // appropriate for, along with documentation and testing.
-    // ui: { enableSessionItem: true, pageMiddleware, getAdditionalFiles, publicPages },
+    // ui: { pageMiddleware, getAdditionalFiles, publicPages },
     // fields,
     // extendGraphqlSchema,
     // validateConfig,
