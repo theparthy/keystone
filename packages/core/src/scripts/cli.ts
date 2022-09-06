@@ -44,7 +44,7 @@ export async function cli(cwd: string, argv: string[]) {
   } else if (command === 'dev') {
     return dev(cwd, flags.resetDb);
   } else if (command === 'telemetry') {
-    return telemetry(argv[1]);
+    return telemetry(cwd, argv[1]);
   } else {
     return commands[command](cwd);
   }
