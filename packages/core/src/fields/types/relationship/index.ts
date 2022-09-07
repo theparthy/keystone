@@ -160,6 +160,7 @@ export const relationship =
         list: foreignListKey,
         field: foreignFieldKey,
         relationName: config.db?.relationName,
+        __ksTelemetryFieldTypeName: 'relationship',
       })({
         ...commonConfig,
         input: {
@@ -207,6 +208,7 @@ export const relationship =
     return fieldType({
       kind: 'relation',
       mode: 'one',
+      __ksTelemetryFieldTypeName: 'relationship',
       list: foreignListKey,
       field: foreignFieldKey,
       foreignKey: config.db?.foreignKey,

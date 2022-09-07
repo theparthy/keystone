@@ -64,6 +64,7 @@ export const file =
 
     return fieldType({
       kind: 'multi',
+      __ksTelemetryFieldTypeName: 'file',
       fields: {
         filesize: { kind: 'scalar', scalar: 'Int', mode: 'optional' },
         filename: { kind: 'scalar', scalar: 'String', mode: 'optional' },

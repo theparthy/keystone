@@ -77,6 +77,7 @@ export const virtual =
     }
     return fieldType({
       kind: 'none',
+      __ksTelemetryFieldTypeName: 'virtual',
     })({
       ...config,
       output: graphql.field({

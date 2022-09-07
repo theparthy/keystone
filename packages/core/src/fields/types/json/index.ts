@@ -33,6 +33,7 @@ export const json =
       meta.provider,
       {
         ...config,
+        __ksTelemetryFieldTypeName: 'json',
         input: {
           create: {
             arg: graphql.arg({ type: graphql.JSON }),

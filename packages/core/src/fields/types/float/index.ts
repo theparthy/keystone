@@ -96,6 +96,7 @@ export const float =
 
     return fieldType({
       kind: 'scalar',
+      __ksTelemetryFieldTypeName: 'float',
       mode,
       scalar: 'Float',
       index: isIndexed === true ? 'index' : isIndexed || undefined,

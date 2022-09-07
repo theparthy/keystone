@@ -115,6 +115,7 @@ export const decimal =
     const index = isIndexed === true ? 'index' : isIndexed || undefined;
     const dbField = {
       kind: 'scalar',
+      __ksTelemetryFieldTypeName: 'decimal',
       mode,
       scalar: 'Decimal',
       nativeType: `Decimal(${precision}, ${scale})`,

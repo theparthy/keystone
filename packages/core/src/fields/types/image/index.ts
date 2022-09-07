@@ -79,6 +79,7 @@ export const image =
     }
 
     return fieldType({
+      __ksTelemetryFieldTypeName: 'image',
       kind: 'multi',
       fields: {
         filesize: { kind: 'scalar', scalar: 'Int', mode: 'optional' },

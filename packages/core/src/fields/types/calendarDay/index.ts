@@ -74,6 +74,7 @@ export const calendarDay =
 
     return fieldType({
       kind: 'scalar',
+      __ksTelemetryFieldTypeName: 'calendarDay',
       mode,
       scalar: usesNativeDateType ? 'DateTime' : 'String',
       index: isIndexed === true ? 'index' : isIndexed || undefined,

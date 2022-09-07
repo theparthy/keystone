@@ -123,6 +123,7 @@ export const select =
     };
     const mode = resolvedIsNullable === false ? 'required' : 'optional';
     const commonDbFieldConfig = {
+      __ksTelemetryFieldTypeName: 'select',
       mode,
       index: isIndexed === true ? 'index' : isIndexed || undefined,
       default:

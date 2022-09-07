@@ -121,6 +121,7 @@ export const document =
       meta.provider,
       {
         ...config,
+        __ksTelemetryFieldTypeName: 'document',
         input: {
           create: {
             arg: graphql.arg({ type: graphql.JSON }),
