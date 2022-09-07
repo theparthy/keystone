@@ -1,11 +1,11 @@
-type Consent = false | { last_sent?: string; optin_at: string };
+export type Consent = false | { last_sent?: string; optin_at: string };
 
 export type Configuration = {
   telemetry:
     | {
         device: Consent;
         projectDefaults: Consent;
-        projects?: {
+        projects: {
           [key: string]: Consent;
         };
       }

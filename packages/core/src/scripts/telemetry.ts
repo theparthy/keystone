@@ -43,7 +43,7 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
   `;
   // Set a generic Keystone project name that we can use across keystone apps
   // e.g. create-keystone-app. By default it uses the package name
-  const config = new Conf<Configuration>({ projectName: 'keystonejs' });
+  const config = new Conf<Configuration>({ projectName: 'keystonejs', clearInvalidConfig: true });
   if (option === 'status') {
     const telemetryData = config.get('telemetry');
     if (telemetryData) {
@@ -97,6 +97,7 @@ async function initGlobalTelemetry(config: Conf<Configuration>, cwd: string) {
   const newTelemetry: Configuration['telemetry'] = {
     device: false,
     projectDefaults: false,
+    projects: {},
   };
   console.log(deviceConsentText);
   const deviceContent = await confirmPrompt('Yes (y) / No (n)', true);

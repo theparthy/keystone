@@ -14,7 +14,7 @@ import { requireSource } from '../../lib/config/requireSource';
 import { defaults } from '../../lib/config/defaults';
 import { createExpressServer } from '../../lib/server/createExpressServer';
 import { createAdminUIMiddleware } from '../../lib/server/createAdminUIMiddleware';
-import { sendTelemetryEvent } from '../../lib/telemetry';
+import { ensureTelemetry, sendTelemetryEvent } from '../../lib/telemetry';
 import {
   generateCommittedArtifacts,
   generateNodeModulesArtifacts,
@@ -38,6 +38,7 @@ const devLoadingHTMLFilepath = path.join(
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
+  await ensureTelemetry(cwd);
   console.log('✨ Starting Keystone');
 
   const app = express();
@@ -84,8 +85,6 @@ export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
     hasAddedAdminUIMiddleware = true;
     initKeystonePromiseResolve();
 
-    sendTelemetryEvent('keystone-dev', cwd, config.db.provider, config.lists, graphQLSchema);
-
     // this exports a function which dynamically requires the config rather than directly importing it.
     // this allows us to control exactly _when_ the gets evaluated so that we can handle errors ourselves.
     // note this is intentionally using CommonJS and not ESM because by doing a dynamic import, webpack
@@ -100,13 +99,16 @@ exports.default = function (req, res) { return res.send(x.toString()) }
     );
     let lastVersion = '';
     let lastError = undefined;
+    const initialisedLists = initialiseLists(config);
     const originalPrismaSchema = printPrismaSchema(
-      initialiseLists(config),
+      initialisedLists,
       config.db.provider,
       config.db.prismaPreviewFeatures
     );
     let lastPrintedGraphQLSchema = printSchema(graphQLSchema);
     let lastApolloServer = apolloServer;
+
+    sendTelemetryEvent(cwd, initialisedLists);
 
     while (true) {
       await wait(500);
