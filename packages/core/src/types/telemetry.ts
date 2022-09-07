@@ -1,33 +1,26 @@
+type Consent = false | { last_sent?: string; optin_at: string };
+
 export type Configuration = {
   telemetry:
     | {
-        device:
-          | {
-              last_sent: string;
-              optin_at: string;
-            }
-          | false;
-        prisma?: boolean;
-        nextjs?: boolean;
-        projects?:
-          | false
-          | {
-              last_sent: string;
-              optin_at: string;
-            };
+        device: Consent;
+        projectDefaults: Consent;
+        projects?: {
+          [key: string]: Consent;
+        };
       }
     | false
     | undefined;
 };
 
 export type Device = {
-  last: string; // new Date().toISOString().slice(0, 10)
+  previous: string; // new Date().toISOString().slice(0, 10)
   os: string; // `linux` | `darwin` | `windows` | ... // os.platform()
   node: string; // `14` | ... | `18` // process.version.split('.').shift().slice(1)
 };
 
 export type Project = {
-  last: string; // new Date().toISOString().slice(0, 10)
+  previous: string; // new Date().toISOString().slice(0, 10)
   // omitted uuid for <BII
   // omitted anything GraphQL related <BII
 

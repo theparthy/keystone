@@ -1,11 +1,7 @@
 import chalk from 'chalk';
 import Conf from 'conf';
-import { initConfig } from '../lib/config/initConfig';
-import { requireSource } from '../lib/config/requireSource';
 import { confirmPrompt } from '../lib/prompts';
-import { deviceInfo, projectInfo } from '../lib/telemetry';
-import { Configuration, Device, Project } from '../types/telemetry';
-import { getConfigPath } from './utils';
+import { Configuration } from '../types/telemetry';
 
 export async function telemetry(cwd: string, option?: string) {
   const usageText = `
@@ -72,58 +68,48 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
   return;
 }
 
-const deviceConsentText = (device: Device) => `
+const deviceConsentText = `
 Welcome to Keystone!
 We'd love to pilfer some analytics, but we don't want to do it without your consent.
 
 Do you consent to us sending the following information about your developer environment? (only when you use 'keystone dev', at most once daily)
 
-${JSON.stringify(device, null, 2)}
+- Last date you used 'keystone dev'
+- Node version
+- Operating System
 
-Yes (y) / No (n)
 `;
 
-const projectConsentText = (project: Project) => `
+const projectConsentText = `
 Awesome! You are a great human being and we love you for helping us out.
 But what about some more information eh, we'd love to know about your projects too, but maybe that's a bit nosy.
 
 Do you consent to us sending the following additional information about your projects? (only when you use 'keystone dev', at most once daily)
 
-${JSON.stringify(project, null, 2)}
+- Last date you used 'keystone dev' for this project
+- The versions of any '@keystone-6', '@opensaas' and '@k6-contrib' [subject to change by community contribution] packages that you are using in this project 
+- The number of lists you have
+- The name and number of field types that you are using
 
-Yes (y) / No (n)
 `;
 
 async function initGlobalTelemetry(config: Conf<Configuration>, cwd: string) {
   const newTelemetry: Configuration['telemetry'] = {
     device: false,
-    prisma: false,
-    nextjs: false,
-    projects: false,
+    projectDefaults: false,
   };
-  console.log('A');
-
-  const deviceContent = await confirmPrompt(deviceConsentText(deviceInfo()), true);
+  console.log(deviceConsentText);
+  const deviceContent = await confirmPrompt('Yes (y) / No (n)', true);
   if (deviceContent) {
     newTelemetry.device = { last_sent: '', optin_at: new Date().toISOString() };
   }
-  console.log('B');
-  // TODO: do this better maybe without init config
-  const keystoneConfig = initConfig(requireSource(getConfigPath(cwd)).default);
-  console.log('C');
-
-  const projectContent = await confirmPrompt(
-    projectConsentText(projectInfo(cwd, keystoneConfig.lists)),
-    true
-  );
+  console.log(projectConsentText);
+  const projectContent = await confirmPrompt('Yes (y) / No (n)', true);
 
   if (projectContent) {
-    newTelemetry.projects = { last_sent: '', optin_at: new Date().toISOString() };
+    newTelemetry.projectDefaults = { last_sent: '', optin_at: new Date().toISOString() };
+    newTelemetry.projects = { [cwd]: { last_sent: '', optin_at: new Date().toISOString() } };
   }
-
-  newTelemetry.nextjs = await confirmPrompt('Are you sure you want to track NextJS?', true);
-
-  newTelemetry.prisma = await confirmPrompt('Are you sure you want to track Prisma?', true);
 
   config.set('telemetry', newTelemetry);
   console.log(`
