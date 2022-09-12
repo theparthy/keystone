@@ -142,7 +142,7 @@ function sendEvent(eventType: 'project' | 'device', eventData: Project | Device)
     const telemetryEndpoint = process.env.KEYSTONE_TELEMETRY_ENDPOINT || defaults.telemetryEndpoint;
     const telemetryUrl = `${telemetryEndpoint}/v1/event/${eventType}`;
 
-    if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+    if (process.env.KEYSTONE_TELEMETRY_DISPLAY === '1') {
       console.log(`[Telemetry]: ${telemetryUrl}`);
       console.log(eventData);
     } else {
