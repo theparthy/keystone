@@ -7,6 +7,14 @@ import { telemetry as telemetryScript } from '../scripts/telemetry';
 import { defaults } from './config/defaults';
 import { InitialisedList } from './core/types-for-lists';
 
+const isDebugging = () => {
+  return (
+    !!process.env.KEYSTONE_TELEMETRY_DEBUG &&
+    process.env.KEYSTONE_TELEMETRY_DEBUG !== '0' &&
+    process.env.KEYSTONE_TELEMETRY_DEBUG !== 'false'
+  );
+};
+
 let userConfig: Conf<Configuration>;
 let telemetry: Configuration['telemetry'];
 try {
@@ -18,10 +26,10 @@ try {
     process.env.KEYSTONE_TELEMETRY_DISABLED = '1';
   }
 } catch (err) {
-  if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+  // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+  if (isDebugging()) {
     console.log(err);
   }
-  // Fail silently
 }
 const todaysDate = new Date().toISOString().slice(0, 10);
 
@@ -44,10 +52,10 @@ export async function ensureTelemetry(cwd: string) {
     try {
       telemetry = userConfig.get('telemetry');
     } catch (err) {
-      if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+      // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+      if (isDebugging()) {
         console.log(err);
       }
-      // Fail silently
     }
   }
 }
@@ -71,28 +79,37 @@ export function sendTelemetryEvent(cwd: string, lists: Record<string, Initialise
       sendDeviceTelemetryEvent(telemetry.device);
     }
   } catch (err) {
-    if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+    // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+    if (isDebugging()) {
       console.log(err);
     }
-    // Fail silently
   }
 }
 
 const keystonePackages = (cwd: string) => {
   try {
-    // Import the project's package.json
+    const projectPkgVersions = require('child_process').execSync('npm list --json', {
+      encoding: 'utf8',
+    });
     const projectPkgJson = require(`${cwd}/package.json`);
-    const dependancies: Record<string, string> = projectPkgJson.dependencies;
+    const dependanciesPkgVersions = JSON.parse(projectPkgVersions).dependencies;
+    // Get the dependancies from the npm list command, if the project is in a monorepo the dependancies will be nested in an object with the key of the package name
+    const dependancies: Record<string, { version: string }> =
+      dependanciesPkgVersions[projectPkgJson.name]?.dependencies ||
+      dependanciesPkgVersions.dependencies;
 
-    // Match any packages that are in the @keystonejs or @keystone-next namespace
-    // TODO: get actual version instead of the range from package.json
+    // Match any packages that are in the @keystone-6, @opensaas, or @k6-contrib namespace
     const namespaceRegex = new RegExp(/^(@keystone-6|@opensaas|@k6-contrib)/);
-    const packages = Object.fromEntries(
-      Object.entries(dependancies).filter(([dependancyKey]) => namespaceRegex.test(dependancyKey))
-    );
-
+    const packages = Object.entries(dependancies)
+      .filter(([dependancyKey]) => namespaceRegex.test(dependancyKey))
+      .reduce((acc, [key, value]) => {
+        acc[key] = value.version;
+        return acc;
+      }, {} as Record<string, string>);
     return packages;
   } catch (err) {
+    console.log(err);
+
     return { error: 'Could not read package.json' };
   }
 };
@@ -114,7 +131,7 @@ const fieldCount = (lists?: Record<string, InitialisedList>): Project['fields'] 
         //skip from relationship fields
         if (fieldPath.startsWith('from')) continue;
         if (field.kind === 'relation') {
-          fields.relationship = (fields.relationship || 0) + 1;
+          fields['@keystone-6/relationship'] = (fields['@keystone-6/relationship'] || 0) + 1;
           continue;
         }
         fields.unknown++;
@@ -159,13 +176,18 @@ function sendEvent(eventType: 'project' | 'device', eventData: Project | Device)
           () => {}
         )
         // Catch silently
-        .catch(() => {});
+        .catch(err => {
+          // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+          if (isDebugging()) {
+            console.log(err);
+          }
+        });
     }
   } catch (err) {
-    if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+    // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+    if (isDebugging()) {
       console.log(err);
     }
-    // Fail silently
   }
 }
 
@@ -175,12 +197,15 @@ function sendProjectTelemetryEvent(
   projectConfig: Consent
 ) {
   try {
-    if (
-      projectConfig === false ||
-      (projectConfig.last_sent && projectConfig.last_sent >= todaysDate)
-    ) {
-      // Don't send if the user has opted out or we've already sent today
+    if (projectConfig === false) {
       return;
+    }
+    if (projectConfig.last_sent && projectConfig.last_sent >= todaysDate) {
+      if (isDebugging()) {
+        console.log('Project telemetry already sent but debugging is enabled');
+      } else {
+        return;
+      }
     }
     const projectInfo: Project = {
       previous: projectConfig.last_sent || '',
@@ -191,35 +216,34 @@ function sendProjectTelemetryEvent(
     sendEvent('project', projectInfo);
     userConfig.set(`telemetry.projects.${cwd}.last_sent`, todaysDate);
   } catch (err) {
-    if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+    // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+    if (isDebugging()) {
       console.log(err);
     }
-    // Fail silently
   }
 }
 
 function sendDeviceTelemetryEvent(deviceConsent: Consent) {
   try {
-    if (
-      deviceConsent === false ||
-      (deviceConsent.last_sent && deviceConsent.last_sent >= todaysDate)
-    ) {
-      // Don't send if the user has opted out or we've already sent today
-      return;
+    if (deviceConsent === false) return;
+    if (deviceConsent.last_sent && deviceConsent.last_sent >= todaysDate) {
+      if (isDebugging()) {
+        console.log('Device telemetry already sent but debugging is enabled');
+      } else {
+        return;
+      }
     }
     const deviceInfo: Device = {
       previous: deviceConsent.last_sent || '',
       os: os.platform(),
       node: process.versions.node.split('.')[0],
     };
-    console.log('DeviceInfo', deviceInfo);
-
     sendEvent('device', deviceInfo);
     userConfig.set(`telemetry.device.last_sent`, todaysDate);
   } catch (err) {
-    if (process.env.KEYSTONE_TELEMETRY_DEBUG === '1') {
+    // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+    if (isDebugging()) {
       console.log(err);
     }
-    // Fail silently
   }
 }
