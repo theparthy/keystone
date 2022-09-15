@@ -36,7 +36,7 @@ export const checkbox =
 
     return fieldType({
       kind: 'scalar',
-      __ksTelemetryFieldTypeName: 'checkbox',
+      __ksTelemetryFieldTypeName: '@keystone-6/checkbox',
       mode: 'required',
       scalar: 'Boolean',
       default: { kind: 'literal', value: defaultValue },

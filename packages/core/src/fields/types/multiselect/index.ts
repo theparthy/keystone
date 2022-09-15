@@ -107,7 +107,7 @@ export const multiselect =
     return jsonFieldTypePolyfilledForSQLite(
       meta.provider,
       {
-        __ksTelemetryFieldTypeName: 'multiselect',
+        __ksTelemetryFieldTypeName: '@keystone-6/multiselect',
         ui,
         hooks: {
           ...config.hooks,

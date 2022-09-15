@@ -110,7 +110,7 @@ export const text =
     return fieldType({
       kind: 'scalar',
       mode,
-      __ksTelemetryFieldTypeName: 'text',
+      __ksTelemetryFieldTypeName: '@keystone-6/text',
       scalar: 'String',
       default: defaultValue === undefined ? undefined : { kind: 'literal', value: defaultValue },
       index: isIndexed === true ? 'index' : isIndexed || undefined,

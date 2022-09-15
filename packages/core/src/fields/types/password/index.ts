@@ -114,7 +114,7 @@ export const password =
       scalar: 'String',
       mode: isNullable === false ? 'required' : 'optional',
       map: config.db?.map,
-      __ksTelemetryFieldTypeName: 'password',
+      __ksTelemetryFieldTypeName: '@keystone-6/password',
     })({
       ...config,
       hooks: {
