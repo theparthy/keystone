@@ -3,6 +3,8 @@
 
 type Thing {
   id: ID!
+  structure: [ThingStructure]
+  structureRaw(hydrateRelationships: Boolean! = false): JSON
   checkbox: Boolean
   password: PasswordState
   toOneRelationship: User
@@ -25,6 +27,10 @@ type Thing {
   image: ImageFieldOutput
   file: FileFieldOutput
   document: Thing_document_Document
+}
+
+interface ThingStructure {
+  discriminant: String
 }
 
 type PasswordState {
@@ -65,6 +71,26 @@ type Thing_document_Document {
 
 input ThingWhereUniqueInput {
   id: ID
+}
+
+type ThingStructureLeaf implements ThingStructure {
+  discriminant: String
+  value: ThingStructureLeafValue
+}
+
+type ThingStructureLeafValue {
+  label: String
+  href: String
+}
+
+type ThingStructureGroup implements ThingStructure {
+  discriminant: String
+  value: ThingStructureGroupValue
+}
+
+type ThingStructureGroupValue {
+  label: String
+  children: [ThingStructure]
 }
 
 input ThingWhereInput {
@@ -244,6 +270,7 @@ enum OrderDirection {
 }
 
 input ThingUpdateInput {
+  structure: [ThingStructureUpdateInput]
   checkbox: Boolean
   password: String
   toOneRelationship: UserRelateToOneForUpdateInput
@@ -263,6 +290,21 @@ input ThingUpdateInput {
   image: ImageFieldInput
   file: FileFieldInput
   document: JSON
+}
+
+input ThingStructureUpdateInput {
+  leaf: ThingStructureLeafUpdateInput
+  group: ThingStructureGroupUpdateInput
+}
+
+input ThingStructureLeafUpdateInput {
+  label: String
+  href: String
+}
+
+input ThingStructureGroupUpdateInput {
+  label: String
+  children: [ThingStructureUpdateInput]
 }
 
 input UserRelateToOneForUpdateInput {
@@ -295,6 +337,7 @@ input ThingUpdateArgs {
 }
 
 input ThingCreateInput {
+  structure: [ThingStructureCreateInput]
   checkbox: Boolean
   password: String
   toOneRelationship: UserRelateToOneForCreateInput
@@ -314,6 +357,21 @@ input ThingCreateInput {
   image: ImageFieldInput
   file: FileFieldInput
   document: JSON
+}
+
+input ThingStructureCreateInput {
+  leaf: ThingStructureLeafCreateInput
+  group: ThingStructureGroupCreateInput
+}
+
+input ThingStructureLeafCreateInput {
+  label: String
+  href: String
+}
+
+input ThingStructureGroupCreateInput {
+  label: String
+  children: [ThingStructureCreateInput]
 }
 
 input UserRelateToOneForCreateInput {

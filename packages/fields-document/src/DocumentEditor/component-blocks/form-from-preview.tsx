@@ -159,7 +159,7 @@ export type NonChildFieldComponentSchema =
   | RelationshipField<boolean>
   | ArrayField<ComponentSchema>;
 
-function isNonChildFieldPreviewProps(
+export function isNonChildFieldPreviewProps(
   props: GenericPreviewProps<ComponentSchema, unknown>
 ): props is GenericPreviewProps<NonChildFieldComponentSchema, unknown> {
   return props.schema.kind !== 'child';

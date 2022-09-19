@@ -1,5 +1,6 @@
 /** @jsxRuntime classic */
 /** @jsx jsx */
+import { graphql } from '@keystone-6/core';
 import { jsx } from '@keystone-ui/core';
 import {
   FieldContainer,
@@ -50,6 +51,22 @@ export type FormField<Value extends FormFieldValue, Options> = {
    * a potentially malicious client
    */
   validate(value: unknown): boolean;
+  preview?: PreviewComponent;
+};
+
+export type FormFieldWithGraphQLField<Value extends FormFieldValue, Options> = FormField<
+  Value,
+  Options
+> & {
+  graphql: {
+    output: graphql.Field<
+      { value: Value },
+      Record<string, graphql.Arg<graphql.InputType, boolean>>,
+      graphql.OutputType,
+      'value'
+    >;
+    input: graphql.NullableInputType;
+  };
 };
 
 type InlineMarksConfig =
@@ -100,6 +117,7 @@ export type ChildField = {
 export type ArrayField<ElementField extends ComponentSchema> = {
   kind: 'array';
   element: ElementField;
+  preview?: PreviewComponent;
 };
 
 export type RelationshipField<Many extends boolean> = {
@@ -108,6 +126,7 @@ export type RelationshipField<Many extends boolean> = {
   selection: string | undefined;
   label: string;
   many: Many;
+  preview?: PreviewComponent;
 };
 
 export interface ObjectField<
@@ -115,6 +134,7 @@ export interface ObjectField<
 > {
   kind: 'object';
   fields: Fields;
+  preview?: PreviewComponent;
 }
 
 export type ConditionalField<
@@ -126,7 +146,13 @@ export type ConditionalField<
   kind: 'conditional';
   discriminant: DiscriminantField;
   values: ConditionalValues;
+  preview?: PreviewComponent;
 };
+
+type PreviewComponent = (props: unknown) => ReactElement | null;
+type TypedPreviewComponent<Field extends ComponentSchema> = (
+  props: PreviewProps<Field> & { autoFocus?: boolean }
+) => ReactElement | null;
 
 export type ComponentSchema =
   | ChildField
@@ -135,16 +161,29 @@ export type ComponentSchema =
   | ConditionalField<FormField<any, any>, { [key: string]: ComponentSchema }>
   | RelationshipField<boolean>
   // this is written like this rather than ArrayField<ComponentSchema> to avoid TypeScript erroring about circularity
-  | { kind: 'array'; element: ComponentSchema };
+  | { kind: 'array'; element: ComponentSchema; preview?: PreviewComponent };
+
+export type ComponentSchemaForGraphQL =
+  | FormFieldWithGraphQLField<any, any>
+  | ObjectField<Record<string, ComponentSchemaForGraphQL>>
+  | ConditionalField<
+      FormFieldWithGraphQLField<any, any>,
+      { [key: string]: ComponentSchemaForGraphQL }
+    >
+  | RelationshipField<boolean>
+  // this is written like this rather than ArrayField<ComponentSchemaForGraphQL> to avoid TypeScript erroring about circularity
+  | { kind: 'array'; element: ComponentSchemaForGraphQL; preview?: PreviewComponent };
 
 export const fields = {
   text({
     label,
     defaultValue = '',
+    preview,
   }: {
     label: string;
     defaultValue?: string;
-  }): FormField<string, undefined> {
+    preview?: TypedPreviewComponent<FormFieldWithGraphQLField<string, undefined>>;
+  }): FormFieldWithGraphQLField<string, undefined> {
     return {
       kind: 'form',
       Input({ value, onChange, autoFocus }) {
@@ -166,15 +205,22 @@ export const fields = {
       validate(value) {
         return typeof value === 'string';
       },
+      graphql: {
+        input: graphql.String,
+        output: graphql.field({ type: graphql.String }),
+      },
+      preview: preview as PreviewComponent,
     };
   },
   url({
     label,
     defaultValue = '',
+    preview,
   }: {
     label: string;
     defaultValue?: string;
-  }): FormField<string, undefined> {
+    preview?: TypedPreviewComponent<FormFieldWithGraphQLField<string, undefined>>;
+  }): FormFieldWithGraphQLField<string, undefined> {
     const validate = (value: unknown) => {
       return typeof value === 'string' && (value === '' || isValidURL(value));
     };
@@ -203,17 +249,24 @@ export const fields = {
       options: undefined,
       defaultValue,
       validate,
+      graphql: {
+        input: graphql.String,
+        output: graphql.field({ type: graphql.String }),
+      },
+      preview: preview as PreviewComponent,
     };
   },
   select<Option extends { label: string; value: string }>({
     label,
     options,
     defaultValue,
+    preview,
   }: {
     label: string;
     options: readonly Option[];
     defaultValue: Option['value'];
-  }): FormField<Option['value'], readonly Option[]> {
+    preview?: TypedPreviewComponent<FormFieldWithGraphQLField<Option['value'], readonly Option[]>>;
+  }): FormFieldWithGraphQLField<Option['value'], readonly Option[]> {
     const optionValuesSet = new Set(options.map(x => x.value));
     if (!optionValuesSet.has(defaultValue)) {
       throw new Error(
@@ -244,17 +297,32 @@ export const fields = {
       validate(value) {
         return typeof value === 'string' && optionValuesSet.has(value);
       },
+      graphql: {
+        input: graphql.String,
+        output: graphql.field({
+          type: graphql.String,
+          // TODO: investigate why this resolve is required here
+          resolve({ value }) {
+            return value;
+          },
+        }),
+      },
+      preview: preview as PreviewComponent,
     };
   },
   multiselect<Option extends { label: string; value: string }>({
     label,
     options,
     defaultValue,
+    preview,
   }: {
     label: string;
     options: readonly Option[];
     defaultValue: readonly Option['value'][];
-  }): FormField<readonly Option['value'][], readonly Option[]> {
+    preview?: TypedPreviewComponent<
+      FormFieldWithGraphQLField<readonly Option['value'][], readonly Option[]>
+    >;
+  }): FormFieldWithGraphQLField<readonly Option['value'][], readonly Option[]> {
     const valuesToOption = new Map(options.map(x => [x.value, x]));
     return {
       kind: 'form',
@@ -281,15 +349,28 @@ export const fields = {
           value.every(value => typeof value === 'string' && valuesToOption.has(value))
         );
       },
+      graphql: {
+        input: graphql.list(graphql.nonNull(graphql.String)),
+        output: graphql.field({
+          type: graphql.list(graphql.nonNull(graphql.String)),
+          // TODO: investigate why this resolve is required here
+          resolve({ value }) {
+            return value;
+          },
+        }),
+      },
+      preview: preview as PreviewComponent,
     };
   },
   checkbox({
     label,
     defaultValue = false,
+    preview,
   }: {
     label: string;
     defaultValue?: boolean;
-  }): FormField<boolean, undefined> {
+    preview?: TypedPreviewComponent<FormFieldWithGraphQLField<boolean, undefined>>;
+  }): FormFieldWithGraphQLField<boolean, undefined> {
     return {
       kind: 'form',
       Input({ value, onChange, autoFocus }) {
@@ -312,6 +393,11 @@ export const fields = {
       validate(value) {
         return typeof value === 'boolean';
       },
+      graphql: {
+        input: graphql.Boolean,
+        output: graphql.field({ type: graphql.Boolean }),
+      },
+      preview: preview as PreviewComponent,
     };
   },
   empty(): FormField<null, undefined> {
@@ -384,8 +470,13 @@ export const fields = {
             },
     };
   },
-  object<Fields extends Record<string, ComponentSchema>>(fields: Fields): ObjectField<Fields> {
-    return { kind: 'object', fields };
+  object<Value extends Record<string, ComponentSchema>>(
+    value: Value,
+    opts?: {
+      preview?: TypedPreviewComponent<ObjectField<Value>>;
+    }
+  ): ObjectField<Value> {
+    return { kind: 'object', fields: value, preview: opts?.preview as PreviewComponent };
   },
   conditional<
     DiscriminantField extends FormField<string | boolean, any>,
@@ -394,7 +485,10 @@ export const fields = {
     }
   >(
     discriminant: DiscriminantField,
-    values: ConditionalValues
+    values: ConditionalValues,
+    opts?: {
+      preview?: TypedPreviewComponent<ConditionalField<DiscriminantField, ConditionalValues>>;
+    }
   ): ConditionalField<DiscriminantField, ConditionalValues> {
     if (
       (discriminant.validate('true') || discriminant.validate('false')) &&
@@ -408,16 +502,19 @@ export const fields = {
       kind: 'conditional',
       discriminant,
       values: values,
+      preview: opts?.preview as PreviewComponent,
     };
   },
   relationship<Many extends boolean | undefined = false>({
     listKey,
     selection,
     label,
+    preview,
     many,
   }: {
     listKey: string;
     label: string;
+    preview?: TypedPreviewComponent<RelationshipField<Many extends true ? true : false>>;
     selection?: string;
   } & (Many extends undefined | false ? { many?: Many } : { many: Many })): RelationshipField<
     Many extends true ? true : false
@@ -428,10 +525,14 @@ export const fields = {
       selection,
       label,
       many: (many ? true : false) as any,
+      preview: preview as PreviewComponent,
     };
   },
-  array<ElementField extends ComponentSchema>(element: ElementField): ArrayField<ElementField> {
-    return { kind: 'array', element };
+  array<ElementField extends ComponentSchema>(
+    element: ElementField,
+    opts?: { preview?: TypedPreviewComponent<ArrayField<ElementField>> }
+  ): ArrayField<ElementField> {
+    return { kind: 'array', element, preview: opts?.preview as PreviewComponent };
   },
 };
 
