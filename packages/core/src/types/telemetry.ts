@@ -1,11 +1,13 @@
-export type Consent = false | { last_sent?: string; optin_at: string };
+import { DatabaseProvider } from './core';
+
+export type Consent = false | { lastSentDate?: string; informedAt: string };
 
 export type Configuration = {
   telemetry:
     | {
         device: Consent;
-        projectDefaults: Consent;
         projects: {
+          default: Consent;
           [key: string]: Consent;
         };
       }
@@ -14,13 +16,13 @@ export type Configuration = {
 };
 
 export type Device = {
-  previous: string; // new Date().toISOString().slice(0, 10)
+  lastSentDate: string; // new Date().toISOString().slice(0, 10)
   os: string; // `linux` | `darwin` | `windows` | ... // os.platform()
   node: string; // `14` | ... | `18` // process.version.split('.').shift().slice(1)
 };
 
 export type Project = {
-  previous: string; // new Date().toISOString().slice(0, 10)
+  lastSentDate: string; // new Date().toISOString().slice(0, 10)
   // omitted uuid for <BII
   // omitted anything GraphQL related <BII
 
@@ -31,6 +33,7 @@ export type Project = {
   // - ...
   versions: { [key: string]: string };
   lists: number;
+  database: DatabaseProvider;
 
   // uses a new `field.__ksTelemetryFieldTypeName` for the key, defaults to `unknown`
   fields: {
@@ -38,20 +41,14 @@ export type Project = {
   };
 };
 
-// when running `keystone dev`
-export type DevEvent = {
-  when: number; // Date.now(), added by server
-  production: boolean; // process.env.NODE_ENV === 'production'
-};
-
 // [also] when running `keystone dev`
 export type ShareDeviceEvent = {
-  when: number; // Date.now(), added by server
-  device: Device;
+  reportedAt: Date & // Date.now(), added by server
+    Device;
 };
 
 // [also] when running `keystone dev`
 export type ShareProjectEvent = {
-  when: number; // Date.now(), added by server
-  project: Project;
+  reportedAt: Date & // Date.now(), added by server
+    Project;
 };

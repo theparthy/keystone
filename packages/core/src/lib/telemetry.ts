@@ -3,9 +3,9 @@ import ci from 'ci-info';
 import Conf from 'conf';
 import fetch from 'node-fetch';
 import { Configuration, Project, Device, Consent } from '../types/telemetry';
-import { telemetry as telemetryScript } from '../scripts/telemetry';
 import { defaults } from './config/defaults';
 import { InitialisedList } from './core/types-for-lists';
+import { DatabaseProvider } from '../types';
 
 const isDebugging = () => {
   return (
@@ -43,12 +43,26 @@ const telemetryDisabled = () => {
   );
 };
 
-export async function ensureTelemetry(cwd: string) {
+function enableAndNotify(cwd: string) {
+  const newTelemetry: Configuration['telemetry'] = {
+    device: { informedAt: new Date().toISOString() },
+    projects: {
+      default: { informedAt: new Date().toISOString() },
+      [cwd]: { informedAt: new Date().toISOString() },
+    },
+  };
+  userConfig.set('telemetry', newTelemetry);
+  console.log(`
+KeystoneJS telemetry has been enabled for more information see: https://keystonejs.com/telemetry
+  `);
+}
+
+export function ensureTelemetry(cwd: string) {
   if (telemetryDisabled()) {
     return;
   }
   if (telemetry === undefined) {
-    await telemetryScript(cwd, 'init');
+    enableAndNotify(cwd);
     try {
       telemetry = userConfig.get('telemetry');
     } catch (err) {
@@ -60,7 +74,11 @@ export async function ensureTelemetry(cwd: string) {
   }
 }
 
-export function sendTelemetryEvent(cwd: string, lists: Record<string, InitialisedList>) {
+export function sendTelemetryEvent(
+  cwd: string,
+  lists: Record<string, InitialisedList>,
+  dbProviderName: DatabaseProvider
+) {
   try {
     if (telemetryDisabled()) {
       return;
@@ -69,11 +87,11 @@ export function sendTelemetryEvent(cwd: string, lists: Record<string, Initialise
       return;
     }
     if (telemetry.projects[cwd] === undefined) {
-      userConfig.set(`telemetry.projects${cwd}`, telemetry.projectDefaults);
-      telemetry.projects[cwd] = telemetry.projectDefaults;
+      userConfig.set(`telemetry.projects${cwd}`, telemetry.projects.default);
+      telemetry.projects[cwd] = telemetry.projects.default;
     }
     if (!!telemetry.projects[cwd]) {
-      sendProjectTelemetryEvent(cwd, lists, telemetry.projects[cwd]);
+      sendProjectTelemetryEvent(cwd, lists, dbProviderName, telemetry.projects[cwd]);
     }
     if (!!telemetry.device) {
       sendDeviceTelemetryEvent(telemetry.device);
@@ -194,13 +212,14 @@ function sendEvent(eventType: 'project' | 'device', eventData: Project | Device)
 function sendProjectTelemetryEvent(
   cwd: string,
   lists: Record<string, InitialisedList>,
+  dbProviderName: DatabaseProvider,
   projectConfig: Consent
 ) {
   try {
     if (projectConfig === false) {
       return;
     }
-    if (projectConfig.last_sent && projectConfig.last_sent >= todaysDate) {
+    if (!!projectConfig.lastSentDate && projectConfig.lastSentDate >= todaysDate) {
       if (isDebugging()) {
         console.log('Project telemetry already sent but debugging is enabled');
       } else {
@@ -208,13 +227,14 @@ function sendProjectTelemetryEvent(
       }
     }
     const projectInfo: Project = {
-      previous: projectConfig.last_sent || '',
+      lastSentDate: projectConfig.lastSentDate || '',
       fields: fieldCount(lists),
       lists: listCount(lists),
       versions: keystonePackages(cwd),
+      database: dbProviderName,
     };
     sendEvent('project', projectInfo);
-    userConfig.set(`telemetry.projects.${cwd}.last_sent`, todaysDate);
+    userConfig.set(`telemetry.projects.${cwd}.lastSentDate`, todaysDate);
   } catch (err) {
     // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
     if (isDebugging()) {
@@ -226,7 +246,7 @@ function sendProjectTelemetryEvent(
 function sendDeviceTelemetryEvent(deviceConsent: Consent) {
   try {
     if (deviceConsent === false) return;
-    if (deviceConsent.last_sent && deviceConsent.last_sent >= todaysDate) {
+    if (deviceConsent.lastSentDate && deviceConsent.lastSentDate >= todaysDate) {
       if (isDebugging()) {
         console.log('Device telemetry already sent but debugging is enabled');
       } else {
@@ -234,12 +254,12 @@ function sendDeviceTelemetryEvent(deviceConsent: Consent) {
       }
     }
     const deviceInfo: Device = {
-      previous: deviceConsent.last_sent || '',
+      lastSentDate: deviceConsent.lastSentDate || '',
       os: os.platform(),
       node: process.versions.node.split('.')[0],
     };
     sendEvent('device', deviceInfo);
-    userConfig.set(`telemetry.device.last_sent`, todaysDate);
+    userConfig.set(`telemetry.device.lastSentDate`, todaysDate);
   } catch (err) {
     // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
     if (isDebugging()) {

@@ -38,9 +38,9 @@ const devLoadingHTMLFilepath = path.join(
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
-  await ensureTelemetry(cwd);
   console.log('✨ Starting Keystone');
 
+  ensureTelemetry(cwd);
   const app = express();
   let expressServer: express.Express | null = null;
   let hasAddedAdminUIMiddleware = false;
@@ -108,7 +108,7 @@ exports.default = function (req, res) { return res.send(x.toString()) }
     let lastPrintedGraphQLSchema = printSchema(graphQLSchema);
     let lastApolloServer = apolloServer;
 
-    sendTelemetryEvent(cwd, initialisedLists);
+    sendTelemetryEvent(cwd, initialisedLists, config.db.provider);
 
     while (true) {
       await wait(500);

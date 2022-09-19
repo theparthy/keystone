@@ -44,26 +44,32 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
   // Set a generic Keystone project name that we can use across keystone apps
   // e.g. create-keystone-app. By default it uses the package name
   const config = new Conf<Configuration>({ projectName: 'keystonejs', clearInvalidConfig: true });
-  if (option === 'status') {
-    const telemetryData = config.get('telemetry');
-    if (telemetryData) {
-      console.log(enabledText(telemetryData));
-    } else if (telemetryData === false) {
-      console.log(disabledText);
-    } else {
+  switch (option) {
+    case 'status':
+      const telemetryData = config.get('telemetry');
+      if (telemetryData) {
+        console.log(enabledText(telemetryData));
+      } else if (telemetryData === false) {
+        console.log(disabledText);
+      } else {
+        console.log(initText);
+      }
+      break;
+    case 'clear':
+      config.delete('telemetry');
       console.log(initText);
-    }
-  } else if (option === 'clear') {
-    config.delete('telemetry');
-    console.log(initText);
-  } else if (option === 'disable' || option === 'disabled') {
-    config.set('telemetry', false);
-    console.log(disabledText);
-  } else if (option === 'init') {
-    config.delete('telemetry');
-    await initGlobalTelemetry(config, cwd);
-  } else {
-    console.log(usageText);
+      break;
+    case 'disable' || 'disabled':
+      config.set('telemetry', false);
+      console.log(disabledText);
+      break;
+    case 'init':
+      config.delete('telemetry');
+      await initGlobalTelemetry(config, cwd);
+      break;
+    default:
+      console.log(option ? `Invalid option: ${option}` : '');
+      console.log(usageText);
   }
   return;
 }
@@ -96,22 +102,25 @@ Do you consent to us sending the following additional information about your pro
 async function initGlobalTelemetry(config: Conf<Configuration>, cwd: string) {
   const newTelemetry: Configuration['telemetry'] = {
     device: false,
-    projectDefaults: false,
-    projects: {},
+    projects: {
+      default: false,
+    },
   };
   console.log(deviceConsentText);
   const deviceContent = await confirmPrompt('Yes (y) / No (n)', true);
   if (deviceContent) {
-    newTelemetry.device = { last_sent: '', optin_at: new Date().toISOString() };
+    newTelemetry.device = { informedAt: new Date().toISOString() };
   }
   console.log(projectConsentText);
   const projectContent = await confirmPrompt('Yes (y) / No (n)', true);
 
   if (projectContent) {
-    newTelemetry.projectDefaults = { last_sent: '', optin_at: new Date().toISOString() };
-    newTelemetry.projects = { [cwd]: { last_sent: '', optin_at: new Date().toISOString() } };
+    newTelemetry.projects.default = { informedAt: new Date().toISOString() };
+    newTelemetry.projects = {
+      default: { informedAt: new Date().toISOString() },
+      [cwd]: { informedAt: new Date().toISOString() },
+    };
   }
-
   config.set('telemetry', newTelemetry);
   console.log(`
 KeystoneJS telemetry: ${chalk.green('Initialized')}
