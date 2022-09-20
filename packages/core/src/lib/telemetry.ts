@@ -15,16 +15,21 @@ const isDebugging = () => {
   );
 };
 
+const packageNames = [
+  '@keystone-6/core',
+  '@keystone-6/auth',
+  '@keystone-6/fields-document',
+  '@keystone-6/cloudinary',
+  '@keystone-6/session-store-redis',
+  '@opensaas/keystone-nextjs-auth',
+];
+
 let userConfig: Conf<Configuration>;
 let telemetry: Configuration['telemetry'];
 try {
   // Load global telemetry config settings (if set)
   userConfig = new Conf<Configuration>({ projectName: 'keystonejs' });
   telemetry = userConfig.get('telemetry');
-
-  if (telemetry === false) {
-    process.env.KEYSTONE_TELEMETRY_DISABLED = '1';
-  }
 } catch (err) {
   // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
   if (isDebugging()) {
@@ -37,32 +42,29 @@ const telemetryDisabled = () => {
   return (
     ci.isCI || // Don't run in CI
     process.env.NODE_ENV === 'production' || // Don't run in production
-    (!!process.env.KEYSTONE_TELEMETRY_DISABLED &&
-      process.env.KEYSTONE_TELEMETRY_DISABLED !== '0' &&
-      process.env.KEYSTONE_TELEMETRY_DISABLED !== 'false')
+    telemetry === false || // Don't run if the user has opted out
+    process.env.KEYSTONE_TELEMETRY_FIRST_RUN === '1' // Don't send on first run
   );
 };
 
-function enableAndNotify(cwd: string) {
-  const newTelemetry: Configuration['telemetry'] = {
-    device: { informedAt: new Date().toISOString() },
-    projects: {
-      default: { informedAt: new Date().toISOString() },
-      [cwd]: { informedAt: new Date().toISOString() },
-    },
-  };
-  userConfig.set('telemetry', newTelemetry);
-  console.log(`
-KeystoneJS telemetry has been enabled for more information see: https://keystonejs.com/telemetry
-  `);
-}
+const notifyText = `Keystone collects anonymous data about how you use it. for more information see: https://keystonejs.com/telemetry`;
 
 export function ensureTelemetry(cwd: string) {
   if (telemetryDisabled()) {
     return;
   }
   if (telemetry === undefined) {
-    enableAndNotify(cwd);
+    const newTelemetry: Configuration['telemetry'] = {
+      device: { informedAt: new Date().toISOString() },
+      projects: {
+        default: { informedAt: new Date().toISOString() },
+        [cwd]: { informedAt: new Date().toISOString() },
+      },
+    };
+    userConfig.set('telemetry', newTelemetry);
+    console.log(notifyText);
+    // Set the environment variable so we don't send an event on this run - this gives the user a chance to opt out
+    process.env.KEYSTONE_TELEMETRY_FIRST_RUN = '1';
     try {
       telemetry = userConfig.get('telemetry');
     } catch (err) {
@@ -106,28 +108,21 @@ export function sendTelemetryEvent(
 
 const keystonePackages = (cwd: string) => {
   try {
-    const projectPkgVersions = require('child_process').execSync('npm list --json', {
-      encoding: 'utf8',
+    const packages: Record<string, string> = {};
+    packageNames.forEach(packageName => {
+      try {
+        const packageJson = require(`${packageName}/package.json`);
+        packages[packageName] = packageJson.version;
+      } catch {
+        // Fail silently
+      }
     });
-    const projectPkgJson = require(`${cwd}/package.json`);
-    const dependanciesPkgVersions = JSON.parse(projectPkgVersions).dependencies;
-    // Get the dependancies from the npm list command, if the project is in a monorepo the dependancies will be nested in an object with the key of the package name
-    const dependancies: Record<string, { version: string }> =
-      dependanciesPkgVersions[projectPkgJson.name]?.dependencies ||
-      dependanciesPkgVersions.dependencies;
-
-    // Match any packages that are in the @keystone-6, @opensaas, or @k6-contrib namespace
-    const namespaceRegex = new RegExp(/^(@keystone-6|@opensaas|@k6-contrib)/);
-    const packages = Object.entries(dependancies)
-      .filter(([dependancyKey]) => namespaceRegex.test(dependancyKey))
-      .reduce((acc, [key, value]) => {
-        acc[key] = value.version;
-        return acc;
-      }, {} as Record<string, string>);
     return packages;
   } catch (err) {
-    console.log(err);
-
+    // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
+    if (isDebugging()) {
+      console.log(err);
+    }
     return { error: 'Could not read package.json' };
   }
 };
@@ -246,7 +241,7 @@ function sendProjectTelemetryEvent(
 function sendDeviceTelemetryEvent(deviceConsent: Consent) {
   try {
     if (deviceConsent === false) return;
-    if (deviceConsent.lastSentDate && deviceConsent.lastSentDate >= todaysDate) {
+    if (!!deviceConsent.lastSentDate && deviceConsent.lastSentDate >= todaysDate) {
       if (isDebugging()) {
         console.log('Device telemetry already sent but debugging is enabled');
       } else {
