@@ -101,6 +101,8 @@ export type KeystoneConfig<TypeInfo extends BaseKeystoneTypeInfo = BaseKeystoneT
    * as the `storage` option for that field.
    */
   storage?: Record<string, StorageConfig>;
+  /** Telemetry boolean to disable telemetry for this project */
+  telemetry?: boolean;
   /** Experimental config options */
   experimental?: {
     /** Enables nextjs graphql api route mode */

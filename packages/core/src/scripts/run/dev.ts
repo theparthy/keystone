@@ -39,8 +39,6 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
   console.log('✨ Starting Keystone');
-
-  ensureTelemetry(cwd);
   const app = express();
   let expressServer: express.Express | null = null;
   let hasAddedAdminUIMiddleware = false;
@@ -54,6 +52,10 @@ export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
   // also, if you're thinking "why not always use the Next api route to get the config"?
   // this will get the GraphQL API up earlier
   const config = initConfig(requireSource(getConfigPath(cwd)).default);
+
+  if (!config.telemetry) {
+    ensureTelemetry(cwd);
+  }
 
   const isReady = () =>
     expressServer !== null && (hasAddedAdminUIMiddleware || config.ui?.isDisabled === true);
@@ -108,7 +110,9 @@ exports.default = function (req, res) { return res.send(x.toString()) }
     let lastPrintedGraphQLSchema = printSchema(graphQLSchema);
     let lastApolloServer = apolloServer;
 
-    sendTelemetryEvent(cwd, initialisedLists, config.db.provider);
+    if (!config.telemetry) {
+      sendTelemetryEvent(cwd, initialisedLists, config.db.provider);
+    }
 
     while (true) {
       await wait(500);
