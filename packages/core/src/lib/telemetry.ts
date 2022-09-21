@@ -6,6 +6,7 @@ import { Configuration, Project, Device, Consent } from '../types/telemetry';
 import { defaults } from './config/defaults';
 import { InitialisedList } from './core/types-for-lists';
 import { DatabaseProvider } from '../types';
+import chalk from 'chalk';
 
 const isDebugging = () => {
   return (
@@ -42,47 +43,44 @@ const telemetryDisabled = () => {
   return (
     ci.isCI || // Don't run in CI
     process.env.NODE_ENV === 'production' || // Don't run in production
-    telemetry === false || // Don't run if the user has opted out
-    process.env.KEYSTONE_TELEMETRY_FIRST_RUN === '1' // Don't send on first run
+    telemetry === false // Don't run if the user has opted out
   );
 };
 
-const notifyText = `Keystone collects anonymous data about how you use it. for more information see: https://keystonejs.com/telemetry`;
+const notifyText = `
+${chalk.bold('Keystone Telemetry')}
 
-export function ensureTelemetry(cwd: string) {
-  if (telemetryDisabled()) {
-    return;
-  }
-  if (telemetry === undefined) {
-    const newTelemetry: Configuration['telemetry'] = {
-      device: { informedAt: new Date().toISOString() },
-      projects: {
-        default: { informedAt: new Date().toISOString() },
-        [cwd]: { informedAt: new Date().toISOString() },
-      },
-    };
-    userConfig.set('telemetry', newTelemetry);
-    console.log(notifyText);
-    // Set the environment variable so we don't send an event on this run - this gives the user a chance to opt out
-    process.env.KEYSTONE_TELEMETRY_FIRST_RUN = '1';
-    try {
-      telemetry = userConfig.get('telemetry');
-    } catch (err) {
-      // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
-      if (isDebugging()) {
-        console.log(err);
-      }
-    }
-  }
-}
+Keystone collects anonymous data about how you use it. 
+For more information including how to opt-out see: https://keystonejs.com/telemetry
 
-export function sendTelemetryEvent(
+Or run: ${chalk.green('keystone telemetry')} to change your preference at any time.
+
+No telemetry data has been sent yet, but will be sent the next time you run ${chalk.green(
+  'keystone dev'
+)}.
+
+`;
+
+export function runTelemetry(
   cwd: string,
   lists: Record<string, InitialisedList>,
   dbProviderName: DatabaseProvider
 ) {
   try {
     if (telemetryDisabled()) {
+      return;
+    }
+    if (telemetry === undefined) {
+      const newTelemetry: Configuration['telemetry'] = {
+        device: { informedAt: new Date().toISOString() },
+        projects: {
+          default: { informedAt: new Date().toISOString() },
+          [cwd]: { informedAt: new Date().toISOString() },
+        },
+      };
+      userConfig.set('telemetry', newTelemetry);
+      console.log(notifyText);
+      // Don't run telemetry on first run, give the user a chance to opt out
       return;
     }
     if (!telemetry) {
@@ -106,7 +104,7 @@ export function sendTelemetryEvent(
   }
 }
 
-const keystonePackages = (cwd: string) => {
+const keystonePackages = () => {
   try {
     const packages: Record<string, string> = {};
     packageNames.forEach(packageName => {
@@ -222,10 +220,10 @@ function sendProjectTelemetryEvent(
       }
     }
     const projectInfo: Project = {
-      lastSentDate: projectConfig.lastSentDate || '',
+      lastSentDate: projectConfig.lastSentDate || null,
       fields: fieldCount(lists),
       lists: listCount(lists),
-      versions: keystonePackages(cwd),
+      versions: keystonePackages(),
       database: dbProviderName,
     };
     sendEvent('project', projectInfo);
@@ -249,7 +247,7 @@ function sendDeviceTelemetryEvent(deviceConsent: Consent) {
       }
     }
     const deviceInfo: Device = {
-      lastSentDate: deviceConsent.lastSentDate || '',
+      lastSentDate: deviceConsent.lastSentDate || null,
       os: os.platform(),
       node: process.versions.node.split('.')[0],
     };

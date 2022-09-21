@@ -16,13 +16,13 @@ export type Configuration = {
 };
 
 export type Device = {
-  lastSentDate: string; // new Date().toISOString().slice(0, 10)
+  lastSentDate: string | null; // new Date().toISOString().slice(0, 10)
   os: string; // `linux` | `darwin` | `windows` | ... // os.platform()
   node: string; // `14` | ... | `18` // process.version.split('.').shift().slice(1)
 };
 
 export type Project = {
-  lastSentDate: string; // new Date().toISOString().slice(0, 10)
+  lastSentDate: string | null; // new Date().toISOString().slice(0, 10)
   // omitted uuid for <BII
   // omitted anything GraphQL related <BII
 

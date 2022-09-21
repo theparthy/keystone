@@ -14,7 +14,7 @@ import { requireSource } from '../../lib/config/requireSource';
 import { defaults } from '../../lib/config/defaults';
 import { createExpressServer } from '../../lib/server/createExpressServer';
 import { createAdminUIMiddleware } from '../../lib/server/createAdminUIMiddleware';
-import { ensureTelemetry, sendTelemetryEvent } from '../../lib/telemetry';
+import { runTelemetry } from '../../lib/telemetry';
 import {
   generateCommittedArtifacts,
   generateNodeModulesArtifacts,
@@ -52,10 +52,6 @@ export const dev = async (cwd: string, shouldDropDatabase: boolean) => {
   // also, if you're thinking "why not always use the Next api route to get the config"?
   // this will get the GraphQL API up earlier
   const config = initConfig(requireSource(getConfigPath(cwd)).default);
-
-  if (!config.telemetry) {
-    ensureTelemetry(cwd);
-  }
 
   const isReady = () =>
     expressServer !== null && (hasAddedAdminUIMiddleware || config.ui?.isDisabled === true);
@@ -111,7 +107,7 @@ exports.default = function (req, res) { return res.send(x.toString()) }
     let lastApolloServer = apolloServer;
 
     if (!config.telemetry) {
-      sendTelemetryEvent(cwd, initialisedLists, config.db.provider);
+      runTelemetry(cwd, initialisedLists, config.db.provider);
     }
 
     while (true) {
