@@ -2,11 +2,11 @@ import os from 'os';
 import ci from 'ci-info';
 import Conf from 'conf';
 import fetch from 'node-fetch';
-import { Configuration, Project, Device, Consent } from '../types/telemetry';
+import chalk from 'chalk';
+import { Configuration, Project, Device, Consent, PackageName } from '../types/telemetry';
+import { DatabaseProvider } from '../types';
 import { defaults } from './config/defaults';
 import { InitialisedList } from './core/types-for-lists';
-import { DatabaseProvider } from '../types';
-import chalk from 'chalk';
 
 const isDebugging = () => {
   return (
@@ -16,7 +16,7 @@ const isDebugging = () => {
   );
 };
 
-const packageNames = [
+const packageNames: PackageName[] = [
   '@keystone-6/core',
   '@keystone-6/auth',
   '@keystone-6/fields-document',
@@ -104,27 +104,6 @@ export function runTelemetry(
   }
 }
 
-const keystonePackages = () => {
-  try {
-    const packages: Record<string, string> = {};
-    packageNames.forEach(packageName => {
-      try {
-        const packageJson = require(`${packageName}/package.json`);
-        packages[packageName] = packageJson.version;
-      } catch {
-        // Fail silently
-      }
-    });
-    return packages;
-  } catch (err) {
-    // Fail silently unless KEYSTONE_TELEMETRY_DEBUG is set to 1
-    if (isDebugging()) {
-      console.log(err);
-    }
-    return { error: 'Could not read package.json' };
-  }
-};
-
 const fieldCount = (lists?: Record<string, InitialisedList>): Project['fields'] => {
   if (!lists) {
     return { unknown: 0 };
@@ -155,14 +134,6 @@ const fieldCount = (lists?: Record<string, InitialisedList>): Project['fields'] 
     }
   }
   return fields;
-};
-
-// Get a the number of Lists in the project
-const listCount = (lists?: Record<string, InitialisedList>) => {
-  if (!lists) {
-    return 0;
-  }
-  return Object.keys(lists).length;
 };
 
 function sendEvent(eventType: 'project' | 'device', eventData: Project | Device) {
@@ -219,11 +190,23 @@ function sendProjectTelemetryEvent(
         return;
       }
     }
+    // get installed keystone package versions
+    const versions: Project['versions'] = {
+      '@keystone-6/core': '0.0.0',
+    };
+    packageNames.forEach(packageName => {
+      try {
+        const packageJson = require(`${packageName}/package.json`);
+        versions[packageName] = packageJson.version;
+      } catch {
+        // Fail silently most likely because the package is not installed
+      }
+    });
     const projectInfo: Project = {
       lastSentDate: projectConfig.lastSentDate || null,
       fields: fieldCount(lists),
-      lists: listCount(lists),
-      versions: keystonePackages(),
+      lists: !lists ? 0 : Object.keys(lists).length,
+      versions,
       database: dbProviderName,
     };
     sendEvent('project', projectInfo);

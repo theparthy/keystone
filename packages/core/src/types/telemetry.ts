@@ -20,6 +20,13 @@ export type Device = {
   os: string; // `linux` | `darwin` | `windows` | ... // os.platform()
   node: string; // `14` | ... | `18` // process.version.split('.').shift().slice(1)
 };
+export type PackageName =
+  | '@keystone-6/core'
+  | '@keystone-6/auth'
+  | '@keystone-6/fields-document'
+  | '@keystone-6/cloudinary'
+  | '@keystone-6/session-store-redis'
+  | '@opensaas/keystone-nextjs-auth';
 
 export type Project = {
   lastSentDate: string | null; // new Date().toISOString().slice(0, 10)
@@ -31,10 +38,9 @@ export type Project = {
   // - `@k6-contrib`
   // - `@opensaas`
   // - ...
-  versions: { [key: string]: string };
+  versions: Partial<Record<PackageName, string>>;
   lists: number;
   database: DatabaseProvider;
-
   // uses a new `field.__ksTelemetryFieldTypeName` for the key, defaults to `unknown`
   fields: {
     [key: string]: number;
