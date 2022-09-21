@@ -16,6 +16,20 @@ export async function telemetry(cwd: string, option?: string) {
         disable     clears the current telemetry configuration (if any) and disables all telemetry on this device
       `;
 
+  const helpText = `
+  ${chalk.bold('KeystoneJS Telemetry')}
+
+      Usage
+        $ keystone telemetry [option]
+      Options
+        status      displays the current telemetry configuration
+        clear       clears the current telemetry configuration (if any)
+        init        clears the current telemetry configuration (if any) and initializes the telemetry configuration
+        disable     clears the current telemetry configuration (if any) and disables all telemetry on this device
+  
+  For more details visit: https://keystonejs.com/telemetry    
+        `;
+
   const disabledText = `
 KeystoneJS telemetry: ${chalk.red('Disabled')}
     
@@ -35,7 +49,11 @@ ${JSON.stringify(telemetryData, null, 2)}
   const initText = `
 KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
 
-  Please run ${chalk.green('keystone telemetry init')} to initialize the telemetry configuration.
+  Please run ${chalk.green(
+    'keystone telemetry init'
+  )} to customize the telemetry configuration, or ${chalk.green(
+    'keystone dev'
+  )} to use the default configuration.
 
 
   Telemetry is completely anonymous and helps us make Keystone better.
@@ -67,6 +85,9 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
       config.delete('telemetry');
       await initGlobalTelemetry(config, cwd);
       break;
+    case '--help':
+      console.log(helpText);
+      break;
     default:
       console.log(option ? `Invalid option: ${option}` : '');
       console.log(usageText);
@@ -76,9 +97,9 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
 
 const deviceConsentText = `
 Welcome to Keystone!
-We'd love to pilfer some analytics, but we don't want to do it without your consent.
+We'd love some help to see how keystone is being used.
 
-Do you consent to us sending the following information about your developer environment? (only when you use 'keystone dev', at most once daily)
+Would you like to send the following information about your developer environment? (only when you use 'keystone dev', at most once daily)
 
 - Last date you used 'keystone dev'
 - Node version
@@ -87,13 +108,12 @@ Do you consent to us sending the following information about your developer envi
 `;
 
 const projectConsentText = `
-Awesome! You are a great human being and we love you for helping us out.
-But what about some more information eh, we'd love to know about your projects too, but maybe that's a bit nosy.
+We'd also love to know about your projects too.
 
-Do you consent to us sending the following additional information about your projects? (only when you use 'keystone dev', at most once daily)
+Would you like to send the following additional information about your projects? (only when you use 'keystone dev', at most once daily)
 
 - Last date you used 'keystone dev' for this project
-- The versions of any '@keystone-6', '@opensaas' and '@k6-contrib' [subject to change by community contribution] packages that you are using in this project 
+- The versions of any '@keystone-6', and '@opensaas' [subject to change by community contribution] packages that you are using in this project 
 - The number of lists you have
 - The name and number of field types that you are using
 

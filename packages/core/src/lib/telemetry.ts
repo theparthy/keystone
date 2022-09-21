@@ -53,11 +53,11 @@ ${chalk.bold('Keystone Telemetry')}
 Keystone collects anonymous data about how you use it. 
 For more information including how to opt-out see: https://keystonejs.com/telemetry
 
-Or run: ${chalk.green('keystone telemetry')} to change your preference at any time.
+Or run: ${chalk.green('keystone telemetry --help')} to change your preference at any time.
 
 No telemetry data has been sent yet, but will be sent the next time you run ${chalk.green(
   'keystone dev'
-)}.
+)} unless you first opt-out.
 
 `;
 
