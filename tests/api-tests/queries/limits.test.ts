@@ -32,7 +32,6 @@ const runner = withServer(
         }),
       },
       graphql: {
-        queryLimits: { maxTotalResults: 6 },
         apolloConfig: {
           validationRules: [depthLimit(3), definitionLimit(3), fieldLimit(8)],
         },
@@ -100,7 +99,7 @@ describe('maxResults Limit', () => {
         data = await context.graphql.run({
           query: `
           query {
-            users(take: 1, 
+            users(take: 1,
               orderBy: { name: asc }
             ) {
               name
@@ -187,8 +186,6 @@ describe('maxResults Limit', () => {
             },
           ],
         });
-        // Reset the count for each query
-        context.totalResults = 0;
         // A basic query that should work
         let posts = await context.query.Post.findMany({
           where: { title: { equals: 'One author' } },
@@ -197,8 +194,6 @@ describe('maxResults Limit', () => {
 
         expect(posts).toEqual([{ title: 'One author', author: [{ name: 'Jess' }] }]);
 
-        // Reset the count for each query
-        context.totalResults = 0;
         // Each subquery is within the limit (even though the total isn't)
         posts = await context.query.Post.findMany({
           where: {
@@ -212,8 +207,6 @@ describe('maxResults Limit', () => {
           { title: 'Two authors', author: [{ name: 'Jess' }, { name: 'Johanna' }] },
         ]);
 
-        // Reset the count for each query
-        context.totalResults = 0;
         // This post has too many authors
         let errors;
         ({ errors } = await context.graphql.raw({
@@ -234,8 +227,6 @@ describe('maxResults Limit', () => {
         expectLimitsExceededError(errors, [{ path: ['posts', expect.any(Number), 'author'] }]);
 
         // Requesting the too-many-authors post is okay as long as the authors aren't returned
-        // Reset the count for each query
-        context.totalResults = 0;
         posts = await context.query.Post.findMany({
           where: { title: { equals: 'Three authors' } },
           query: 'title',
@@ -244,8 +235,6 @@ describe('maxResults Limit', () => {
         expect(posts).toEqual([{ title: 'Three authors' }]);
 
         // Some posts are okay, but one breaks the limit
-        // Reset the count for each query
-        context.totalResults = 0;
         ({ errors } = await context.graphql.raw({
           query: `
           query {
@@ -262,8 +251,6 @@ describe('maxResults Limit', () => {
         expectLimitsExceededError(errors, [{ path: ['posts', expect.any(Number), 'author'] }]);
 
         // All subqueries are within limits, but the total isn't
-        // Reset the count for each query
-        context.totalResults = 0;
         ({ errors } = await context.graphql.raw({
           query: `
           query {

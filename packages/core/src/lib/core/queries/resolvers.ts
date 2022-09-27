@@ -270,14 +270,4 @@ function applyMaxResults(results: unknown[], list: InitialisedList, context: Key
   if (results.length > list.maxResults) {
     throw limitsExceededError({ list: list.listKey, type: 'maxResults', limit: list.maxResults });
   }
-  if (context) {
-    context.totalResults += results.length;
-    if (context.totalResults > context.maxTotalResults) {
-      throw limitsExceededError({
-        list: list.listKey,
-        type: 'maxTotalResults',
-        limit: context.maxTotalResults,
-      });
-    }
-  }
 }
