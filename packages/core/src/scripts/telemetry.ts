@@ -11,9 +11,9 @@ export async function telemetry(cwd: string, option?: string) {
         $ keystone telemetry [option]
       Options
         status      displays the current telemetry configuration
-        clear       clears the current telemetry configuration (if any)
-        init        clears the current telemetry configuration (if any) and initializes the telemetry configuration
-        disable     clears the current telemetry configuration (if any) and disables all telemetry on this device
+        reset       resets the current telemetry configuration (if any)
+        setup       resets the current telemetry configuration (if any) and setupializes the telemetry configuration
+        disable     resets the current telemetry configuration (if any) and disables all telemetry on this device
       `;
 
   const helpText = `
@@ -23,9 +23,9 @@ export async function telemetry(cwd: string, option?: string) {
         $ keystone telemetry [option]
       Options
         status      displays the current telemetry configuration
-        clear       clears the current telemetry configuration (if any)
-        init        clears the current telemetry configuration (if any) and initializes the telemetry configuration
-        disable     clears the current telemetry configuration (if any) and disables all telemetry on this device
+        reset       resets the current telemetry configuration (if any)
+        setup       resets the current telemetry configuration (if any) and setupializes the telemetry configuration
+        disable     resets the current telemetry configuration (if any) and disables all telemetry on this device
   
   For more details visit: https://keystonejs.com/telemetry    
         `;
@@ -46,11 +46,11 @@ ${JSON.stringify(telemetryData, null, 2)}
   Telemetry is completely anonymous and helps us make Keystone better.
   For more details visit: https://keystonejs.com/telemetry`;
 
-  const initText = `
+  const setupText = `
 KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
 
   Please run ${chalk.green(
-    'keystone telemetry init'
+    'keystone telemetry setup'
   )} to customize the telemetry configuration, or ${chalk.green(
     'keystone dev'
   )} to use the default configuration.
@@ -61,7 +61,7 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
   `;
   // Set a generic Keystone project name that we can use across keystone apps
   // e.g. create-keystone-app. By default it uses the package name
-  const config = new Conf<Configuration>({ projectName: 'keystonejs', clearInvalidConfig: true });
+  const config = new Conf<Configuration>({ projectName: 'keystonejs', resetInvalidConfig: true });
   switch (option) {
     case 'status':
       const telemetryData = config.get('telemetry');
@@ -70,20 +70,20 @@ KeystoneJS telemetry: ${chalk.red('Not Inilialized')}
       } else if (telemetryData === false) {
         console.log(disabledText);
       } else {
-        console.log(initText);
+        console.log(setupText);
       }
       break;
-    case 'clear':
+    case 'reset':
       config.delete('telemetry');
-      console.log(initText);
+      console.log(setupText);
       break;
     case 'disable' || 'disabled':
       config.set('telemetry', false);
       console.log(disabledText);
       break;
-    case 'init':
+    case 'setup':
       config.delete('telemetry');
-      await initGlobalTelemetry(config, cwd);
+      await setupGlobalTelemetry(config, cwd);
       break;
     case '--help':
       console.log(helpText);
@@ -119,7 +119,7 @@ Would you like to send the following additional information about your projects?
 
 `;
 
-async function initGlobalTelemetry(config: Conf<Configuration>, cwd: string) {
+async function setupGlobalTelemetry(config: Conf<Configuration>, cwd: string) {
   const newTelemetry: Configuration['telemetry'] = {
     device: false,
     projects: {
