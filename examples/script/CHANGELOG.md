@@ -1,6 +1,6 @@
-# @keystone-6/example-graphql-ts-gql
+# @keystone-6/example-script
 
-## 0.0.4
+## 0.0.2
 
 ### Patch Changes
 
