@@ -78,12 +78,7 @@ describe(`List access`, () => {
             const query = `mutation { ${createMutationName}(data: { name: "bar" }) { id } }`;
             const { data, errors } = (await context.graphql.raw({ query })) as ExecutionResult<any>;
             if (!access.create) {
-              expectNoAccess(
-                data,
-                errors,
-                createMutationName,
-                `You cannot create that ${listKey}`
-              );
+              expectNoAccess(data, errors, createMutationName, `You cannot create that ${listKey}`);
             } else {
               expect(errors).toBe(undefined);
               expect(data![createMutationName]).not.toEqual(null);

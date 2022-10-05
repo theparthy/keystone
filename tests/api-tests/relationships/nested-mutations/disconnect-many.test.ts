@@ -140,7 +140,7 @@ describe('non-matching filter', () => {
         variables: { id: createUser.id },
       });
       expect(data).toEqual({ updateUser: null });
-      const message = "Access denied: You cannot disconnect that Note - it may not exist";
+      const message = 'Access denied: You cannot disconnect that Note - it may not exist';
       expectSingleRelationshipError(errors, 'updateUser', 'User.notes', message);
     })
   );
