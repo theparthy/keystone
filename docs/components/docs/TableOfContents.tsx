@@ -71,7 +71,7 @@ export function TableOfContents({
           display: ['none', null, null, 'block'],
           boxSizing: 'border-box',
           overflowY: 'auto',
-          top: '1rem',
+          top: '2rem',
           WebkitOverflowScrolling: 'touch',
 
           // [media.sm]: { display: 'block' },

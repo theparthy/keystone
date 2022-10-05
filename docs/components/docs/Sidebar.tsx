@@ -17,6 +17,7 @@ export function Sidebar({ isUpdatesPage }: SidebarProps) {
     <aside
       css={mq({
         fontSize: 'var(--font-xsmall)',
+        borderRight: '1px solid var(--border)',
       })}
     >
       <div
@@ -24,18 +25,23 @@ export function Sidebar({ isUpdatesPage }: SidebarProps) {
         tabIndex={0}
         css={mq({
           display: ['none', null, 'block'],
-          padding: ['0 0 var(--space-large) var(--space-large)', null, 0],
+          padding: ['2rem 0 var(--space-large) var(--space-large)', null, 0],
           borderBottom: ['1px solid var(--muted)', null, 'none'],
           position: 'sticky',
-          top: 16,
-          bottom: 16,
+          top: '0',
           alignSelf: 'start',
           overflow: 'auto',
           height: '100vh',
           paddingBottom: '2rem',
         })}
       >
-        <Navigation />
+        <div
+          css={{
+            paddingTop: '2rem',
+          }}
+        >
+          <Navigation />
+        </div>
       </div>
     </aside>
   );
